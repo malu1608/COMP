@@ -9,18 +9,41 @@ ID : [a-zA-Z_][a-zA-Z_0-9]* ;
 
 WS : [ \t\n\r\f]+ -> skip ;
 
-program
-    : statement+ EOF
-    ;
+program : (importDeclaration)* classDeclaration EOF;
 
-statement
-    : expression ';'
-    | ID '=' INTEGER ';'
-    ;
+importDeclaration: 'import' ID ( '.' ID )* ';';
 
-expression
-    : expression op=('*' | '/') expression #BinaryOp
-    | expression op=('+' | '-') expression #BinaryOp
-    | value=INTEGER #Integer
-    | value=ID #Identifier
-    ;
+classDeclaration : 'class' ID ('extends' ID)? '{' (varDeclaration)* (methodDeclaration)* '}';
+
+varDeclaration : type ID ';';
+
+methodDeclaration : ('public')? ('static')? type ID '(' (type ID (',' type ID)*)? ')' '{' (varDeclaration | statement)* ('return' expression ';')? '}';
+
+type : 'int' ('[' ']')? | 'boolean' | ID ('[' ']')?;
+
+statement : '{' (statement)* '}'
+    | 'if' '(' expression ')' statement 'else' statement
+    | 'while' '(' expression ')' statement
+    | expression ';'
+    | ID '=' expression ';'
+    | ID '[' expression ']' '=' expression ';';
+
+expression : expression '&&' expression
+    | expression '<' expression
+    | expression '+' expression
+    | expression '-' expression
+    | expression '*' expression
+    | expression '/' expression
+    | expression '[' expression ']'
+    | expression '.' 'length'
+    | expression '.' ID '(' (expression (',' expression)*)? ')'
+    | 'new' 'int' '[' expression ']'
+    | 'new' ID '(' ')'
+    | '!' expression
+    | '(' expression ')'
+    | INTEGER
+    | 'true'
+    | 'false'
+    | ID
+    | 'this';
+
