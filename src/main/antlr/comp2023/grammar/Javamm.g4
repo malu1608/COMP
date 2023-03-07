@@ -38,6 +38,7 @@ statement : '{' (statement)* '}'
 expression
     : '(' expression ')'
     | expression '[' expression ']'
+    | '!' expression
     | expression ('*' | '/') expression
     | expression ('+' | '-')  expression
     | expression '<' expression
@@ -46,7 +47,6 @@ expression
     | expression '.' ID '(' (expression (',' expression)*)? ')'
     | 'new' 'int' '[' expression ']'
     | 'new' ID '(' ')'
-    | '!' expression
     | INTEGER
     | 'true'
     | 'false'
