@@ -9,7 +9,7 @@ ID : [a-zA-Z_][a-zA-Z_0-9]* ;
 
 WS : [ \t\n\r\f]+ -> skip ;
 
-SLC : [\n]* -> skip ;
+SLC : '//' ~[\n]* -> skip ;
 MLC : '/*' .*? '*/' -> skip ;
 
 program : (importDeclaration)* classDeclaration EOF;
@@ -20,7 +20,9 @@ classDeclaration : 'class' ID ('extends' ID)? '{' (varDeclaration)* (methodDecla
 
 varDeclaration : type ID ';';
 
-methodDeclaration : ('public')? ('static')? type ID '(' (type ID (',' type ID)*)? ')' '{' (varDeclaration | statement )* ('return' expression ';')? '}';
+parameters : (type ID (',' type ID)*)?;
+
+methodDeclaration : ('public')? ('static')? type ID '(' parameters ')' '{' (varDeclaration | statement )* ('return' expression ';')? '}';
 
 type : 'int' ('[' ']')? | 'boolean' | ID ('[' ']')?;
 
