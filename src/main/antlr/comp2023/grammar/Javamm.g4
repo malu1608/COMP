@@ -20,7 +20,9 @@ classDeclaration : 'class' ID ('extends' ID)? '{' (varDeclaration)* (methodDecla
 
 varDeclaration : type ID ';';
 
-parameters : (type ID (',' type ID)*)?;
+parameter: type name=ID;
+
+parameters : (parameter (',' parameter)*)?;
 
 methodDeclaration : ('public')? ('static')? type ID '(' parameters ')' '{' (varDeclaration | statement )* ('return' expression ';')? '}';
 
@@ -33,19 +35,18 @@ statement : '{' (statement)* '}'
     | ID '=' expression ';'
     | ID '[' expression ']' '=' expression ';';
 
-expression : expression '&&' expression
-    | expression '<' expression
-    | expression '+' expression
-    | expression '-' expression
-    | expression '*' expression
-    | expression '/' expression
+expression
+    : '(' expression ')'
     | expression '[' expression ']'
+    | expression ('*' | '/') expression
+    | expression ('+' | '-')  expression
+    | expression '<' expression
+    | expression '&&' expression
     | expression '.' 'length'
     | expression '.' ID '(' (expression (',' expression)*)? ')'
     | 'new' 'int' '[' expression ']'
     | 'new' ID '(' ')'
     | '!' expression
-    | '(' expression ')'
     | INTEGER
     | 'true'
     | 'false'
