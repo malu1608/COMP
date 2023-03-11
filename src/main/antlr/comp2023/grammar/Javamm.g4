@@ -12,7 +12,9 @@ WS : [ \t\n\r\f]+ -> skip ;
 SLC : '//' ~[\n]* -> skip ;
 MLC : '/*' .*? '*/' -> skip ;
 
-program : (importDeclaration)* classDeclaration EOF;
+program
+    : statement + EOF
+    |(importDeclaration)* classDeclaration EOF;
 
 importDeclaration: 'import' ID ( '.' ID )* ';';
 
@@ -41,8 +43,8 @@ expression
     | '!' expression
     | expression ('*' | '/') expression
     | expression ('+' | '-')  expression
-    | expression '<' expression
-    | expression '&&' expression
+    | expression ('<' | '>') expression
+    | expression ('&&' || '||') expression
     | expression '.' 'length'
     | expression '.' ID '(' (expression (',' expression)*)? ')'
     | 'new' 'int' '[' expression ']'
