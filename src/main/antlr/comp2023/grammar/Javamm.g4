@@ -38,20 +38,20 @@ statement : '{' (statement)* '}'
     | ID '[' expression ']' '=' expression ';';
 
 expression
-    : '(' expression ')'
-    | expression '[' expression ']'
-    | '!' expression
-    | expression ('*' | '/') expression
-    | expression ('+' | '-')  expression
-    | expression ('<' | '>') expression
-    | expression ('&&' || '||') expression
-    | expression '.' 'length'
-    | expression '.' ID '(' (expression (',' expression)*)? ')'
-    | 'new' 'int' '[' expression ']'
-    | 'new' ID '(' ')'
-    | INTEGER
-    | 'true'
-    | 'false'
-    | ID
-    | 'this';
+    : '(' expression ')' #BinaryOp
+    | expression '[' expression ']' #ArrayAccessChain
+    | '!' expression #BinaryOp
+    | expression ('*' | '/') expression #BinaryOp
+    | expression ('+' | '-')  expression #BinaryOp
+    | expression ('<' | '>') expression #BinaryOp
+    | expression ('&&' | '||') expression #BinaryOp
+    | expression '.'  'length' #Length
+    | expression '.' ID '(' (expression (',' expression)*)? ')' #MethodCall
+    | 'new' 'int' '[' expression ']' #NewIntArray
+    | 'new' ID '(' ')' #NewObject
+    | INTEGER #Literal
+    | 'true' #Literal
+    | 'false' #Literal
+    | ID #Identifier
+    | 'this' #ThisExpr;
 
