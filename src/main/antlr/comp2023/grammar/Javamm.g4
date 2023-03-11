@@ -41,17 +41,16 @@ expression
     : '(' expression ')' #BinaryOp
     | expression '[' expression ']' #ArrayAccessChain
     | '!' expression #BinaryOp
-    | expression ('*' | '/') expression #BinaryOp
-    | expression ('+' | '-')  expression #BinaryOp
-    | expression ('<' | '>') expression #BinaryOp
-    | expression ('&&' | '||') expression #BinaryOp
+    | expression op=('*' | '/') expression #BinaryOp
+    | expression op=('+' | '-')  expression #BinaryOp
+    | expression op=('<' | '>') expression #BinaryOp
+    | expression op=('&&' | '||') expression #BinaryOp
     | expression '.'  'length' #Length
     | expression '.' ID '(' (expression (',' expression)*)? ')' #MethodCall
     | 'new' 'int' '[' expression ']' #NewIntArray
     | 'new' ID '(' ')' #NewObject
-    | INTEGER #Literal
-    | 'true' #Literal
-    | 'false' #Literal
-    | ID #Identifier
-    | 'this' #ThisExpr;
+    | value=INTEGER #INTEGER
+    | value= ID #Identifier;
+
+
 
