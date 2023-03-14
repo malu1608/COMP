@@ -5,16 +5,14 @@ grammar Javamm;
 }
 
 INTEGER : [0-9]+ ;
-ID : [a-zA-Z_][a-zA-Z_0-9]* ;
-
+ID : [$a-zA-Z_][$a-zA-Z_0-9]* ; //TODO
 WS : [ \t\n\r\f]+ -> skip ;
 
 SLC : '//' ~[\n]* -> skip ;
 MLC : '/*' .*? '*/' -> skip ;
 
 program
-    : statement + EOF
-    |(importDeclaration)* classDeclaration EOF;
+    : (importDeclaration)* classDeclaration EOF;
 
 importDeclaration: 'import' ID ( '.' ID )* ';';
 
@@ -35,18 +33,19 @@ statement : '{' (statement)* '}'
     | 'while' '(' expression ')' statement
     | expression ';'
     | ID '=' expression ';'
-    | ID '[' expression ']' '=' expression ';';
+    | ID '[' expression ']' '=' expression ';'
+    ;
 
 expression
-    : '(' expression ')' #BinaryOp
-    | expression '[' expression ']' #ArrayAccessChain
-    | '!' expression #BinaryOp
+    : '!' expression #Not
+    |'(' expression ')' #UnaryOp
+    | expression '[' expression ']' #ArrayAccess
     | expression op=('*' | '/') expression #BinaryOp
     | expression op=('+' | '-')  expression #BinaryOp
     | expression op=('<' | '>') expression #BinaryOp
     | expression op=('&&' | '||') expression #BinaryOp
     | expression '.'  'length' #Length
-    | expression '.' ID '(' (expression (',' expression)*)? ')' #MethodCall
+    | expression '.' name=ID '(' (expression (',' expression)*)? ')' #MethodCall
     | 'new' 'int' '[' expression ']' #NewIntArray
     | 'new' ID '(' ')' #NewObject
     | value=INTEGER #INTEGER
