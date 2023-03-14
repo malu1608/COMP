@@ -41,6 +41,7 @@ public class Launcher {
         TestUtils.noErrors(parserResult.getReports());
 
         // ... add remaining stages
+        System.out.println(parserResult.getRootNode().toTree());
     }
 
     private static Map<String, String> parseArgs(String[] args) {

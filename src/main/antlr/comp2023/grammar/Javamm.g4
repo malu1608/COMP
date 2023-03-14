@@ -12,7 +12,9 @@ WS : [ \t\n\r\f]+ -> skip ;
 SLC : '//' ~[\n]* -> skip ;
 MLC : '/*' .*? '*/' -> skip ;
 
-program : (importDeclaration)* classDeclaration EOF;
+program
+    : statement + EOF
+    |(importDeclaration)* classDeclaration EOF;
 
 importDeclaration: 'import' ID ( '.' ID )* ';';
 
@@ -36,20 +38,19 @@ statement : '{' (statement)* '}'
     | ID '[' expression ']' '=' expression ';';
 
 expression
-    : '(' expression ')'
-    | expression '[' expression ']'
-    | '!' expression
-    | expression ('*' | '/') expression
-    | expression ('+' | '-')  expression
-    | expression '<' expression
-    | expression '&&' expression
-    | expression '.' 'length'
-    | expression '.' ID '(' (expression (',' expression)*)? ')'
-    | 'new' 'int' '[' expression ']'
-    | 'new' ID '(' ')'
-    | INTEGER
-    | 'true'
-    | 'false'
-    | ID
-    | 'this';
+    : '(' expression ')' #BinaryOp
+    | expression '[' expression ']' #ArrayAccessChain
+    | '!' expression #BinaryOp
+    | expression op=('*' | '/') expression #BinaryOp
+    | expression op=('+' | '-')  expression #BinaryOp
+    | expression op=('<' | '>') expression #BinaryOp
+    | expression op=('&&' | '||') expression #BinaryOp
+    | expression '.'  'length' #Length
+    | expression '.' ID '(' (expression (',' expression)*)? ')' #MethodCall
+    | 'new' 'int' '[' expression ']' #NewIntArray
+    | 'new' ID '(' ')' #NewObject
+    | value=INTEGER #INTEGER
+    | value= ID #Identifier;
+
+
 
