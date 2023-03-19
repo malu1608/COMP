@@ -3,7 +3,6 @@ package pt.up.fe.comp2023.analysis;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
-import pt.up.fe.comp.jmm.ast.JmmNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +14,7 @@ public class MySymbolTable implements SymbolTable {
     private String className = null;
     private String superName = null;
     private List<Symbol> fieldsList = new ArrayList<>();
-    private final Map<String, MethodInfo> methodsList = new HashMap<>();
+    private final Map<String, Method> methodsList = new HashMap<>();
 
     @Override
     public List<String> getImports() {
@@ -62,7 +61,7 @@ public class MySymbolTable implements SymbolTable {
     }
 
     public void addMethod(String s, Type returnType, List<Symbol> parameters, List<Symbol> variables) {
-        methodsList.put(s, new MethodInfo(returnType, parameters, variables));
+        methodsList.put(s, new Method(returnType, parameters, variables));
     }
 
     public void addField(Symbol _field) {

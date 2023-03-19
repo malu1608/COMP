@@ -4,7 +4,7 @@ grammar Javamm;
     package pt.up.fe.comp2023;
 }
 
-INTEGER : [0-9]+ ;
+INTEGER : [0]|([1-9][0-9]*) ;
 ID : [$a-zA-Z_][$a-zA-Z_0-9]* ; //TODO
 WS : [ \t\n\r\f]+ -> skip ;
 
@@ -14,31 +14,31 @@ MLC : '/*' .*? '*/' -> skip ;
 program
     : (importDeclaration)* classDeclaration EOF;
 
-importDeclaration: 'import' path=ID ( '.' path=ID )* ';';
+importDeclaration: 'import' path=ID ( '.' path=ID )* ';' #ImportDecl;
 
-classDeclaration : 'class' classname=ID ('extends' name=ID)? '{' (varDeclaration)* (methodDeclaration)* '}';
+classDeclaration : 'class' classname=ID ('extends' name=ID)? '{' (varDeclaration)* (methodDeclaration)* '}' #ClassDecl;
 
-varDeclaration : type name=ID ';';
+varDeclaration : type name=ID ';' #VarDecl;
 
-parameter: type name=ID;
+parameter: type name=ID #Param;
 
-parameters : (parameter (',' parameter)*)?;
+parameters : (parameter (',' parameter)*)? #Params;
 
 methodDeclaration : ('public')? ('static')? type name=ID '(' parameters ')' '{' (varDeclaration | statement )* ('return' expression ';')? '}' #MethodDef;
 
 type locals[boolean isArray=false]
-    : name='int' ('[' ']' {$isArray=true;})?
-    | name='String'('[' ']' {$isArray=true;})?
-    | name='boolean'
-    | name=ID
+    : name='int' ('[' ']' {$isArray=true;})? #IntType
+    | name='String'('[' ']' {$isArray=true;})? #StringType
+    | name='boolean'#BooleanType
+    | name=ID #IDType
     ;
 
-statement : '{' (statement)* '}'
-    | 'if' '(' expression ')' statement 'else' statement
-    | 'while' '(' expression ')' statement
-    | expression ';'
-    | ID '=' expression ';'
-    | ID '[' expression ']' '=' expression ';'
+statement : '{' (statement)* '}' #Stat
+    | 'if' '(' expression ')' statement 'else' statement #IfElseStat
+    | 'while' '(' expression ')' statement #WhileStat
+    | expression ';' #ExpStat
+    | value=ID '=' expression ';' #AssignStat
+    | value=ID '[' expression ']' '=' expression ';' #ArrayAssignStat
     ;
 
 expression
@@ -52,7 +52,7 @@ expression
     | expression '.'  'length' #Length
     | expression '.' name=ID '(' (expression (',' expression)*)? ')' #MethodCall
     | 'new' 'int' '[' expression ']' #NewIntArray
-    | 'new' ID '(' ')' #NewObject
+    | 'new' value=ID '(' ')' #NewObject
     | value=INTEGER #INTEGER
     | value= ID #Identifier;
 

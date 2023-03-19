@@ -5,13 +5,13 @@ import pt.up.fe.comp.jmm.analysis.table.Type;
 
 import java.util.List;
 
-public class MethodInfo {
+public class Method {
 
     private Type returnType;
     private List<Symbol> parameters;
     private List<Symbol> variables;
 
-    public MethodInfo(Type returnType, List<Symbol> parameters, List<Symbol> variables) {
+    public Method(Type returnType, List<Symbol> parameters, List<Symbol> variables) {
         this.returnType = returnType;
         this.parameters = parameters;
         this.variables = variables;
