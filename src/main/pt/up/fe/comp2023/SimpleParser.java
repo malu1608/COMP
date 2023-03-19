@@ -3,6 +3,7 @@ package pt.up.fe.comp2023;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
+import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp.jmm.ast.antlr.AntlrParser;
 import pt.up.fe.comp.jmm.ast.antlr.ThrowingErrorListener;
 import pt.up.fe.comp.jmm.parser.JmmParser;
@@ -10,6 +11,8 @@ import pt.up.fe.comp.jmm.parser.JmmParserResult;
 import pt.up.fe.comp.jmm.report.Report;
 import pt.up.fe.comp.jmm.report.ReportType;
 import pt.up.fe.comp.jmm.report.Stage;
+import pt.up.fe.specs.util.SpecsIo;
+import pt.up.fe.specs.util.SpecsSystem;
 
 
 import java.util.Collections;
@@ -39,6 +42,7 @@ public class SimpleParser implements JmmParser {
     public JmmParserResult parse(String jmmCode, String startingRule, Map<String, String> config) {
 
         try {
+
             // Convert code string into a character stream
             var input = new ANTLRInputStream(jmmCode);
             // Transform characters into tokens using the lexer

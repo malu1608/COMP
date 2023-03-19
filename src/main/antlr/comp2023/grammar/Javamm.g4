@@ -14,19 +14,24 @@ MLC : '/*' .*? '*/' -> skip ;
 program
     : (importDeclaration)* classDeclaration EOF;
 
-importDeclaration: 'import' ID ( '.' ID )* ';';
+importDeclaration: 'import' path=ID ( '.' path=ID )* ';';
 
-classDeclaration : 'class' ID ('extends' ID)? '{' (varDeclaration)* (methodDeclaration)* '}';
+classDeclaration : 'class' classname=ID ('extends' name=ID)? '{' (varDeclaration)* (methodDeclaration)* '}';
 
-varDeclaration : type ID ';';
+varDeclaration : type name=ID ';';
 
 parameter: type name=ID;
 
 parameters : (parameter (',' parameter)*)?;
 
-methodDeclaration : ('public')? ('static')? type ID '(' parameters ')' '{' (varDeclaration | statement )* ('return' expression ';')? '}';
+methodDeclaration : ('public')? ('static')? type name=ID '(' parameters ')' '{' (varDeclaration | statement )* ('return' expression ';')? '}' #MethodDef;
 
-type : 'int' ('[' ']')? | 'boolean' | ID ('[' ']')?;
+type locals[boolean isArray=false]
+    : name='int' ('[' ']' {$isArray=true;})?
+    | name='String'('[' ']' {$isArray=true;})?
+    | name='boolean'
+    | name=ID
+    ;
 
 statement : '{' (statement)* '}'
     | 'if' '(' expression ')' statement 'else' statement
