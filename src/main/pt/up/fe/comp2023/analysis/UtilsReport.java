@@ -47,4 +47,12 @@ public class UtilsReport {
 
         return baseReport(at, ReportType.ERROR, Stage.SEMANTIC, message);
     }
+
+    public static Report typeMismatchReport(JmmNode at, String actual, String expected) {
+        String message = "incompatible types: " +
+                actual +
+                " cannot be converted to " +
+                expected;
+        return baseReport(at, ReportType.ERROR, Stage.SEMANTIC, message);
+    }
 }
