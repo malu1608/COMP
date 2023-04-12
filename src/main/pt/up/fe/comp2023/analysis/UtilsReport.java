@@ -55,4 +55,15 @@ public class UtilsReport {
                 expected;
         return baseReport(at, ReportType.ERROR, Stage.SEMANTIC, message);
     }
+
+    public static Report operatorCannotBeAppliedReport(JmmNode at, String operator, String left, String right) {
+        String message = "operator '" +
+                operator +
+                "' cannot be applied to '" +
+                left +
+                "and" +
+                right +
+                "'";
+        return baseReport(at, ReportType.ERROR, Stage.SEMANTIC, message);
+    }
 }

@@ -23,6 +23,7 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
         addVisit("Assignment", this::visitAssignment);
         addVisit("IfElseStatement", this::visitIfElse);
         addVisit("WhileStatement", this::visitWhile);
+        addVisit("BinaryOp", this::visitBinaryOp);
 
     }
 
@@ -167,6 +168,49 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
 
         if (!conditionType.getName().equals("boolean") || conditionType.isArray())
             reports.add(UtilsReport.typeMismatchReport(jmmNode.getJmmChild(0), conditionType.getName(), "boolean"));
+
+        return reports;
+    }
+
+    private List<Report> visitBinaryOp(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+
+        Type leftType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
+        Type rightType = UtilsAnalyser.getType(jmmNode.getJmmChild(1));
+
+        if (leftType.getName().equals("#UNKNOWNTYPE") || rightType.getName().equals("#UNKNOWNTYPE"))
+            return reports;
+        if (!leftType.equals(rightType)) {
+            putUnknownType(jmmNode);
+            reports.add(UtilsReport.typeMismatchReport(jmmNode, leftType.getName(), rightType.getName()));
+            return reports;
+        } else if(ARITHMETIC_OPS.contains(jmmNode.get("op")) || LOGICAL_OP.contains(jmmNode.get("op"))) {
+            if(leftType.isArray()) {
+                putUnknownType(jmmNode);
+                reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, jmmNode.get("op"), leftType.getName(), rightType.getName()));
+                return reports;
+            }
+        } else if(ARITHMETIC_OPS.contains(jmmNode.get("op")) || COMPARISON_OP.contains(jmmNode.get("op"))){
+            if(!leftType.getName().equals("int")){
+                putUnknownType(jmmNode);
+                reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, jmmNode.get("op"), leftType.getName(), rightType.getName()));
+                return reports;
+            }
+        } else if(LOGICAL_OP.contains(jmmNode.get("op"))){
+            if(!leftType.getName().equals("boolean")){
+                putUnknownType(jmmNode);
+                reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, jmmNode.get("op"), leftType.getName(), rightType.getName()));
+                return reports;
+            }
+        } else if(!TYPES.contains(leftType.getName())){
+            putUnknownType(jmmNode);
+            reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, jmmNode.get("op"), leftType.getName(), rightType.getName()));
+            return reports;
+        }
+        if(COMPARISON_OP.contains(jmmNode.get("op")))
+            putType(jmmNode, new Type("boolean", false));
+        else
+            putType(jmmNode, leftType);
 
         return reports;
     }
