@@ -21,6 +21,8 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
         addVisit("ReturnStatement", this::visitReturn);
         addVisit("MethodCall", this::visitMethodCall);
         addVisit("Assignment", this::visitAssignment);
+        addVisit("IfElseStatement", this::visitIfElse);
+        addVisit("WhileStatement", this::visitWhile);
 
     }
 
@@ -143,6 +145,28 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
 
         if(!leftType.equals(rightType))
             reports.add(UtilsReport.typeMismatchReport(jmmNode, leftType.getName(), rightType.getName()));
+
+        return reports;
+    }
+
+    private List<Report> visitIfElse(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+
+        Type conditionType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
+
+        if (!conditionType.getName().equals("boolean") || conditionType.isArray())
+            reports.add(UtilsReport.typeMismatchReport(jmmNode.getJmmChild(0), conditionType.getName(), "boolean"));
+
+        return reports;
+    }
+
+    private List<Report> visitWhile(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+
+        Type conditionType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
+
+        if (!conditionType.getName().equals("boolean") || conditionType.isArray())
+            reports.add(UtilsReport.typeMismatchReport(jmmNode.getJmmChild(0), conditionType.getName(), "boolean"));
 
         return reports;
     }
