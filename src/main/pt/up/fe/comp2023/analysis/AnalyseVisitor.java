@@ -1,4 +1,164 @@
 package pt.up.fe.comp2023.analysis;
 
-public class AnalyseVisitor {
+import pt.up.fe.comp.jmm.analysis.table.Symbol;
+import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
+import pt.up.fe.comp.jmm.analysis.table.Type;
+import pt.up.fe.comp.jmm.ast.JmmNode;
+import pt.up.fe.comp.jmm.ast.PostorderJmmVisitor;
+import pt.up.fe.comp.jmm.report.Report;
+import pt.up.fe.specs.util.SpecsCollections;
+
+import java.util.*;
+public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report>>{
+    static final List<String> TYPES = Arrays.asList("int", "boolean", "void");
+    static final List<String> ARITHMETIC_OPS = Arrays.asList("ADD", "SUB", "MUL", "DIV");
+    static final List<String> COMPARISON_OP = List.of("LT");
+    static final List<String> LOGICAL_OP = List.of("AND");
+
+    public AnalyseVisitor() {
+        addVisit("ClassDeclaration", this::visitClassDeclaration);
+        addVisit("Type", this::visitType);
+        addVisit("ReturnStatement", this::visitReturn);
+        addVisit("MethodCall", this::visitMethodCall);
+
+    }
+
+    private List<Report> visitClassDeclaration(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+
+        if (!jmmNode.getAttributes().contains("extends"))
+            return reports;
+
+        String extendsName = jmmNode.get("extends");
+
+        if (jmmNode.get("classname").equals(extendsName)) {
+            reports.add(UtilsReport.cyclicInheritance(jmmNode, extendsName));
+            return reports;
+        }
+
+        boolean foundImport = symbolTable
+                .getImports()
+                .stream()
+                .anyMatch(imp -> imp.substring(imp.lastIndexOf(".") + 1).equals(extendsName));
+
+        if (foundImport)
+            return reports;
+
+        reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, extendsName));
+
+        return reports;
+    }
+
+    private List<Report> visitType(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+        Type objType = UtilsAnalyser.getType(jmmNode);
+
+        if (TYPES.contains(objType.getName()))
+            return reports;
+
+        return checkTypeImport(jmmNode, symbolTable);
+    }
+
+    private List<Report> visitReturn(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+        String methodSignature = jmmNode.getJmmParent().getJmmParent().get("signature");
+        Type returnType = symbolTable.getReturnType(methodSignature);
+
+        if (returnType.getName().equals("void"))
+            return reports;
+
+        if (jmmNode.getChildren().isEmpty()) {
+            reports.add(UtilsReport.returnTypeMismatchReport(jmmNode, returnType.getName(), "void"));
+            return reports;
+        }
+
+        Type exprType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
+
+        if (!returnType.equals(exprType))
+            reports.add(UtilsReport.returnTypeMismatchReport(jmmNode, returnType.getName(), exprType.getName()));
+
+        return reports;
+    }
+
+    private List<Report> visitMethodCall(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+
+        if (!jmmNode.getJmmChild(0).getAttributes().contains("type")) {
+            if (jmmNode.getJmmChild(0).get("name").equals(symbolTable.getClassName())) {
+                String methodSignature = inferMethodSignature(jmmNode);
+                if (symbolTable.getMethods().contains(methodSignature)) {
+                    String symbolName = UtilsAnalyser.getMethodSymbolName(methodSignature);
+                    reports.add(UtilsReport.NonStaticInStaticContext(jmmNode, symbolName));
+                } else if (symbolTable.getSuper() == null) {
+                    String symbolName = UtilsAnalyser.getMethodSymbolName(methodSignature);
+                    reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, symbolName));
+                }
+            }
+            putUnknownType(jmmNode);
+            return reports;
+        }
+
+        Type operand = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
+        if (TYPES.contains(operand.getName())) {
+            putUnknownType(jmmNode);
+            reports.add(UtilsReport.cannotBeDereferencedReport(jmmNode, operand.getName()));
+            return reports;
+        }
+
+        if (operand.getName().equals("#UNKNOWNTYPE") || operand.isArray() || !symbolTable.getClassName().equals(operand.getName())) {
+            putUnknownType(jmmNode);
+            return reports;
+        }
+
+        String methodSignature = inferMethodSignature(jmmNode);
+        if (symbolTable.getMethods().contains(methodSignature)) {
+            Type returnType = symbolTable.getReturnType(methodSignature);
+            putType(jmmNode, returnType);
+        } else {
+            if (symbolTable.getSuper() == null) {
+                String symbolName = UtilsAnalyser.getMethodSymbolName(methodSignature);
+                reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, symbolName));
+            }
+            putUnknownType(jmmNode);
+        }
+
+        return reports;
+    }
+
+    private List<Report> checkTypeImport(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+        Type objType = UtilsAnalyser.getType(jmmNode);
+
+        boolean foundImport = symbolTable
+                .getImports()
+                .stream()
+                .anyMatch(imp -> imp.substring(imp.lastIndexOf(".") + 1).equals(objType.getName()));
+
+        if (foundImport)
+            return reports;
+
+        reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, objType.getName()));
+
+        return reports;
+    }
+
+    private String inferMethodSignature(JmmNode jmmNode) {
+        StringBuilder methodSignatureBuilder = new StringBuilder();
+        methodSignatureBuilder.append(jmmNode.get("methodname"));
+        for (JmmNode argument: jmmNode.getJmmChild(1).getChildren()) {
+            Type argType = UtilsAnalyser.getType(argument);
+            methodSignatureBuilder.append("#");
+            methodSignatureBuilder.append(argType.print());
+        }
+        return methodSignatureBuilder.toString();
+    }
+
+    private void putType(JmmNode jmmNode, Type type) {
+        jmmNode.put("type", type.getName());
+        jmmNode.put("isArray", String.valueOf(type.isArray()));
+    }
+
+    private void putUnknownType(JmmNode jmmNode) {
+        jmmNode.put("type", "#UNKNOWNTYPE");
+    }
 }
