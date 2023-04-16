@@ -24,7 +24,7 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
         addVisit("IfElseStatement", this::visitIfElse);
         addVisit("WhileStatement", this::visitWhile);
         addVisit("BinaryOp", this::visitBinaryOp);
-
+        addVisit("NotExpression", this::visitNotExpression);
     }
 
     private List<Report> visitClassDeclaration(JmmNode jmmNode, SymbolTable symbolTable) {
@@ -186,32 +186,47 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
             return reports;
         } else if(ARITHMETIC_OPS.contains(jmmNode.get("op")) || LOGICAL_OP.contains(jmmNode.get("op"))) {
             if(leftType.isArray()) {
-                putUnknownType(jmmNode);
-                reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, jmmNode.get("op"), leftType.getName(), rightType.getName()));
-                return reports;
+                return getReports(jmmNode, reports, leftType, rightType);
             }
         } else if(ARITHMETIC_OPS.contains(jmmNode.get("op")) || COMPARISON_OP.contains(jmmNode.get("op"))){
             if(!leftType.getName().equals("int")){
-                putUnknownType(jmmNode);
-                reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, jmmNode.get("op"), leftType.getName(), rightType.getName()));
-                return reports;
+                return getReports(jmmNode, reports, leftType, rightType);
             }
         } else if(LOGICAL_OP.contains(jmmNode.get("op"))){
             if(!leftType.getName().equals("boolean")){
-                putUnknownType(jmmNode);
-                reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, jmmNode.get("op"), leftType.getName(), rightType.getName()));
-                return reports;
+                return getReports(jmmNode, reports, leftType, rightType);
             }
         } else if(!TYPES.contains(leftType.getName())){
-            putUnknownType(jmmNode);
-            reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, jmmNode.get("op"), leftType.getName(), rightType.getName()));
-            return reports;
+            return getReports(jmmNode, reports, leftType, rightType);
         }
         if(COMPARISON_OP.contains(jmmNode.get("op")))
             putType(jmmNode, new Type("boolean", false));
         else
             putType(jmmNode, leftType);
 
+        return reports;
+    }
+
+    private List<Report> visitNotExpression(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+
+        Type operandType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
+
+        if (operandType.getName().equals("#UNKNOWNTYPE"))
+            return reports;
+
+        if (!operandType.getName().equals("boolean") || operandType.isArray()){
+            putUnknownType(jmmNode);
+            reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode.getJmmChild(0), "!", operandType.print(), "boolean"));
+            return reports;
+        }
+        putType(jmmNode, new Type("boolean", false));
+        return reports;
+    }
+
+    private List<Report> getReports(JmmNode jmmNode, List<Report> reports, Type leftType, Type rightType) {
+        putUnknownType(jmmNode);
+        reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, jmmNode.get("op"), leftType.getName(), rightType.getName()));
         return reports;
     }
 
