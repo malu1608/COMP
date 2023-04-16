@@ -7,6 +7,8 @@ import java.util.Map;
 
 import pt.up.fe.comp.TestUtils;
 import pt.up.fe.comp.jmm.parser.JmmParserResult;
+import pt.up.fe.comp2023.analysis.Analyser;
+import pt.up.fe.comp2023.ollir.Optimizer;
 import pt.up.fe.specs.util.SpecsIo;
 import pt.up.fe.specs.util.SpecsLogs;
 import pt.up.fe.specs.util.SpecsSystem;
@@ -35,13 +37,25 @@ public class Launcher {
         SimpleParser parser = new SimpleParser();
 
         // Parse stage
+        code = SpecsIo.read("test/pt/up/fe/comp/cp2/apps/HelloWorld.jmm");
         JmmParserResult parserResult = parser.parse(code, config);
 
         // Check if there are parsing errors
         TestUtils.noErrors(parserResult.getReports());
 
+        //analysis stage
+        var analyser = new Analyser();
+
+        var semanticsResult = analyser.semanticAnalysis(parserResult);
+        TestUtils.noErrors(semanticsResult);
+        System.out.println("Analysis:\n---------\n" + analyser.semanticAnalysis(parserResult).getSymbolTable().print());
+        //instantiate Optimizer
+        var optimizer = new Optimizer();
+
+        System.out.println("Ollir code:\n---------\n" + optimizer.toOllir(analyser.semanticAnalysis(parserResult)).getOllirCode());
+
         // ... add remaining stages
-        System.out.println(parserResult.getRootNode().toTree());
+        //System.out.println(parserResult.getRootNode().toTree());
     }
 
     private static Map<String, String> parseArgs(String[] args) {
