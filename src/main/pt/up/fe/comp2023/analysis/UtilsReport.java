@@ -73,4 +73,13 @@ public class UtilsReport {
                 right;
         return baseReport(at, ReportType.ERROR, Stage.SEMANTIC, message);
     }
+
+    public static Report operatorCannotBeAppliedReport(JmmNode at, String operator, String type) {
+        String message = "operator '" +
+                operator +
+                "' cannot be applied to '" +
+                type +
+                "'";
+        return baseReport(at, ReportType.ERROR, Stage.SEMANTIC, message);
+    }
 }

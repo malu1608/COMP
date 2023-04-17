@@ -26,6 +26,7 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
         addVisit("BinaryOp", this::visitBinaryOp);
         addVisit("NotExpression", this::visitNotExpression);
         addVisit("IntArrayAllocation", this::visitIntArrayAllocation);
+        addVisit("ObjectAllocation", this::visitObjectAllocation);
     }
 
     private List<Report> visitClassDeclaration(JmmNode jmmNode, SymbolTable symbolTable) {
@@ -240,6 +241,21 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
         }
         putType(jmmNode, new Type("int", true));
         return reports;
+    }
+
+    private List<Report> visitObjectAllocation(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+
+        Type objType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
+        if(objType.getName().equals("#UNKNOWNTYPE"))
+            return reports;
+
+        if(TYPES.contains(objType.getName()) || objType.isArray()){
+            putUnknownType(jmmNode);
+            reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, "new", objType.print()));
+            return reports;
+        }
+        return checkTypeImport(jmmNode, symbolTable);
     }
 
     private List<Report> getReports(JmmNode jmmNode, List<Report> reports, Type leftType, Type rightType) {
