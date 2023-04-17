@@ -66,4 +66,11 @@ public class UtilsReport {
                 "'";
         return baseReport(at, ReportType.ERROR, Stage.SEMANTIC, message);
     }
+    public static Report typeConversionErrorReport(JmmNode at, String left, String right) {
+        String message = "incompatible types: " +
+                left +
+                " could not be converted to " +
+                right;
+        return baseReport(at, ReportType.ERROR, Stage.SEMANTIC, message);
+    }
 }
