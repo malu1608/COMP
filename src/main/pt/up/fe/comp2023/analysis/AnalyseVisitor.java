@@ -9,13 +9,20 @@ import pt.up.fe.comp.jmm.report.Report;
 import pt.up.fe.specs.util.SpecsCollections;
 
 import java.util.*;
-public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report>>{
+public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, Void> {
     static final List<String> TYPES = Arrays.asList("int", "boolean", "void");
     static final List<String> ARITHMETIC_OPS = Arrays.asList("ADD", "SUB", "MUL", "DIV");
     static final List<String> COMPARISON_OP = List.of("LT");
     static final List<String> LOGICAL_OP = List.of("AND");
 
-    public AnalyseVisitor() {
+    List<Report> reports = new ArrayList<>();
+
+    public List<Report> getReports() {
+        return reports;
+    }
+
+    @Override
+    protected void buildVisitor() {
         addVisit("ClassDeclaration", this::visitClassDeclaration);
         addVisit("Type", this::visitType);
         addVisit("ReturnStatement", this::visitReturn);
@@ -31,19 +38,28 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
         addVisit("Identifier", this::visitIdentifier);
         addVisit("Index", this::visitIndex);
         addVisit("Length", this::visitLength);
+
+        setDefaultVisit(this::defaultVisit);
     }
 
-    private List<Report> visitClassDeclaration(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void defaultVisit(JmmNode jmmNode, SymbolTable symbolTable) {
+
+        for (JmmNode child : jmmNode.getChildren())
+            visit(child, symbolTable);
+
+        return null;
+    }
+
+    private Void visitClassDeclaration(JmmNode jmmNode, SymbolTable symbolTable) {
 
         if (!jmmNode.getAttributes().contains("extends"))
-            return reports;
+            return null;
 
         String extendsName = jmmNode.get("extends");
 
         if (jmmNode.get("classname").equals(extendsName)) {
             reports.add(UtilsReport.cyclicInheritance(jmmNode, extendsName));
-            return reports;
+            return null;
         }
 
         boolean foundImport = symbolTable
@@ -52,34 +68,33 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
                 .anyMatch(imp -> imp.substring(imp.lastIndexOf(".") + 1).equals(extendsName));
 
         if (foundImport)
-            return reports;
+            return null;
 
         reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, extendsName));
 
-        return reports;
+        return null;
     }
 
-    private List<Report> visitType(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitType(JmmNode jmmNode, SymbolTable symbolTable) {
         Type objType = UtilsAnalyser.getType(jmmNode);
 
         if (TYPES.contains(objType.getName()))
-            return reports;
+            return null;
+        checkTypeImport(jmmNode, symbolTable);
 
-        return checkTypeImport(jmmNode, symbolTable);
+        return null;
     }
 
-    private List<Report> visitReturn(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitReturn(JmmNode jmmNode, SymbolTable symbolTable) {
         String methodSignature = jmmNode.getJmmParent().getJmmParent().get("signature");
         Type returnType = symbolTable.getReturnType(methodSignature);
 
         if (returnType.getName().equals("void"))
-            return reports;
+            return null;
 
         if (jmmNode.getChildren().isEmpty()) {
             reports.add(UtilsReport.returnTypeMismatchReport(jmmNode, returnType.getName(), "void"));
-            return reports;
+            return null;
         }
 
         Type exprType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
@@ -87,11 +102,10 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
         if (!returnType.equals(exprType))
             reports.add(UtilsReport.returnTypeMismatchReport(jmmNode, returnType.getName(), exprType.getName()));
 
-        return reports;
+        return null;
     }
 
-    private List<Report> visitMethodCall(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitMethodCall(JmmNode jmmNode, SymbolTable symbolTable) {
 
         if (!jmmNode.getJmmChild(0).getAttributes().contains("type")) {
             if (jmmNode.getJmmChild(0).get("name").equals(symbolTable.getClassName())) {
@@ -105,19 +119,19 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
                 }
             }
             putUnknownType(jmmNode);
-            return reports;
+            return null;
         }
 
         Type operand = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
         if (TYPES.contains(operand.getName())) {
             putUnknownType(jmmNode);
             reports.add(UtilsReport.cannotBeDereferencedReport(jmmNode, operand.getName()));
-            return reports;
+            return null;
         }
 
         if (operand.getName().equals("#UNKNOWNTYPE") || operand.isArray() || !symbolTable.getClassName().equals(operand.getName())) {
             putUnknownType(jmmNode);
-            return reports;
+            return null;
         }
 
         String methodSignature = inferMethodSignature(jmmNode);
@@ -132,145 +146,141 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
             putUnknownType(jmmNode);
         }
 
-        return reports;
+        return null;
     }
 
-    private List<Report> visitAssignment(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitAssignment(JmmNode jmmNode, SymbolTable symbolTable) {
 
         Type leftType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
         Type rightType = UtilsAnalyser.getType(jmmNode.getJmmChild(1));
 
         if (leftType.getName().equals("#UNKNOWNTYPE") || rightType.getName().equals("#UNKNOWNTYPE"))
-            return reports;
+            return null;
 
         if (leftType.isArray() || rightType.isArray()) {
             if (!leftType.equals(rightType))
                 reports.add(UtilsReport.typeMismatchReport(jmmNode, leftType.getName(), rightType.getName()));
-            return reports;
+            return null;
         }
 
         if(!leftType.equals(rightType))
             reports.add(UtilsReport.typeMismatchReport(jmmNode, leftType.getName(), rightType.getName()));
 
-        return reports;
+        return null;
     }
 
-    private List<Report> visitIfElse(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitIfElse(JmmNode jmmNode, SymbolTable symbolTable) {
 
         Type conditionType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
 
         if (!conditionType.getName().equals("boolean") || conditionType.isArray())
             reports.add(UtilsReport.typeMismatchReport(jmmNode.getJmmChild(0), conditionType.getName(), "boolean"));
 
-        return reports;
+        return null;
     }
 
-    private List<Report> visitWhile(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitWhile(JmmNode jmmNode, SymbolTable symbolTable) {
 
         Type conditionType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
 
         if (!conditionType.getName().equals("boolean") || conditionType.isArray())
             reports.add(UtilsReport.typeMismatchReport(jmmNode.getJmmChild(0), conditionType.getName(), "boolean"));
 
-        return reports;
+        return null;
     }
 
-    private List<Report> visitBinaryOp(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitBinaryOp(JmmNode jmmNode, SymbolTable symbolTable) {
 
         Type leftType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
         Type rightType = UtilsAnalyser.getType(jmmNode.getJmmChild(1));
 
         if (leftType.getName().equals("#UNKNOWNTYPE") || rightType.getName().equals("#UNKNOWNTYPE"))
-            return reports;
+            return null;
         if (!leftType.equals(rightType)) {
             putUnknownType(jmmNode);
             reports.add(UtilsReport.typeMismatchReport(jmmNode, leftType.getName(), rightType.getName()));
-            return reports;
+            return null;
         } else if(ARITHMETIC_OPS.contains(jmmNode.get("op")) || LOGICAL_OP.contains(jmmNode.get("op"))) {
             if(leftType.isArray()) {
-                return getReports(jmmNode, reports, leftType, rightType);
+                getReports(jmmNode, reports, leftType, rightType);
+                return null;
             }
         } else if(ARITHMETIC_OPS.contains(jmmNode.get("op")) || COMPARISON_OP.contains(jmmNode.get("op"))){
             if(!leftType.getName().equals("int")){
-                return getReports(jmmNode, reports, leftType, rightType);
+                getReports(jmmNode, reports, leftType, rightType);
+                return null;
             }
         } else if(LOGICAL_OP.contains(jmmNode.get("op"))){
             if(!leftType.getName().equals("boolean")){
-                return getReports(jmmNode, reports, leftType, rightType);
+                getReports(jmmNode, reports, leftType, rightType);
+                return null;
             }
         } else if(!TYPES.contains(leftType.getName())){
-            return getReports(jmmNode, reports, leftType, rightType);
+            getReports(jmmNode, reports, leftType, rightType);
+            return null;
         }
         if(COMPARISON_OP.contains(jmmNode.get("op")))
             putType(jmmNode, new Type("boolean", false));
         else
             putType(jmmNode, leftType);
 
-        return reports;
+        return null;
     }
 
-    private List<Report> visitNotExpression(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitNotExpression(JmmNode jmmNode, SymbolTable symbolTable) {
 
         Type operandType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
 
         if (operandType.getName().equals("#UNKNOWNTYPE"))
-            return reports;
+            return null;
 
         if (!operandType.getName().equals("boolean") || operandType.isArray()){
             putUnknownType(jmmNode);
             reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode.getJmmChild(0), "!", operandType.print(), "boolean"));
-            return reports;
+            return null;
         }
         putType(jmmNode, new Type("boolean", false));
-        return reports;
+        return null;
     }
 
-    private List<Report> visitIntArrayAllocation(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitIntArrayAllocation(JmmNode jmmNode, SymbolTable symbolTable) {
 
         Type sizeType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
 
         if (sizeType.getName().equals("#UNKNOWNTYPE"))
-            return reports;
+            return null;
 
         if (!sizeType.getName().equals("int") || sizeType.isArray()){
             putUnknownType(jmmNode);
             reports.add(UtilsReport.typeConversionErrorReport(jmmNode.getJmmChild(0), sizeType.print(), "int"));
-            return reports;
+            return null;
         }
         putType(jmmNode, new Type("int", true));
-        return reports;
+        return null;
     }
 
-    private List<Report> visitObjectAllocation(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitObjectAllocation(JmmNode jmmNode, SymbolTable symbolTable) {
 
         Type objType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
         if(objType.getName().equals("#UNKNOWNTYPE"))
-            return reports;
+            return null;
 
         if(TYPES.contains(objType.getName()) || objType.isArray()){
             putUnknownType(jmmNode);
             reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, "new", objType.print()));
-            return reports;
+            return null;
         }
-        return checkTypeImport(jmmNode, symbolTable);
+        checkTypeImport(jmmNode, symbolTable);
+        return null;
     }
 
-    private List<Report> visitThis (JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitThis (JmmNode jmmNode, SymbolTable symbolTable) {
 
         putType(jmmNode, new Type(symbolTable.getClassName(), false));
-        return reports;
+        return null;
     }
 
-    private List<Report> visitIdentifier(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitIdentifier(JmmNode jmmNode, SymbolTable symbolTable) {
 
         String identifier = jmmNode.get("name");
         String methodSignature = getMethodSignature(jmmNode);
@@ -293,11 +303,10 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
             reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, identifier));
         }
 
-        return reports;
+        return null;
     }
 
-    private List<Report> visitIndex(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitIndex(JmmNode jmmNode, SymbolTable symbolTable) {
 
         Type operandType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
         Type indexType = UtilsAnalyser.getType(jmmNode.getJmmChild(1));
@@ -313,18 +322,17 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
             putUnknownType(jmmNode);
             reports.add(UtilsReport.createArrayRequiredReport(jmmNode.getJmmChild(0), operandType.print()));
         }
-        return reports;
+        return null;
     }
 
-    private List<Report> visitLength(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void visitLength(JmmNode jmmNode, SymbolTable symbolTable) {
 
         Type operandType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
 
         if(!operandType.getName().equals("#UNKNOWNTYPE") && !operandType.isArray())
             reports.add(UtilsReport.createArrayRequiredReport(jmmNode.getJmmChild(0), operandType.print()));
 
-        return reports;
+        return null;
     }
 
     // Helper method to get the method signature for the given identifier
@@ -338,14 +346,13 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
                 || (!symbolTable.getClassName().equals(identifier) && !symbolTable.getImports().contains(identifier));
     }
 
-    private List<Report> getReports(JmmNode jmmNode, List<Report> reports, Type leftType, Type rightType) {
+    private Void getReports(JmmNode jmmNode, List<Report> reports, Type leftType, Type rightType) {
         putUnknownType(jmmNode);
         reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, jmmNode.get("op"), leftType.getName(), rightType.getName()));
-        return reports;
+        return null;
     }
 
-    private List<Report> checkTypeImport(JmmNode jmmNode, SymbolTable symbolTable) {
-        List<Report> reports = new ArrayList<>();
+    private Void checkTypeImport(JmmNode jmmNode, SymbolTable symbolTable) {
         Type objType = UtilsAnalyser.getType(jmmNode);
 
         boolean foundImport = symbolTable
@@ -354,11 +361,11 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
                 .anyMatch(imp -> imp.substring(imp.lastIndexOf(".") + 1).equals(objType.getName()));
 
         if (foundImport)
-            return reports;
+            return null;
 
         reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, objType.getName()));
 
-        return reports;
+        return null;
     }
 
     private String inferMethodSignature(JmmNode jmmNode) {

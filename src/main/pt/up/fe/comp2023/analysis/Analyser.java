@@ -14,7 +14,8 @@ public class Analyser implements JmmAnalysis {
         MySymbolTable symbolTable = new MySymbolTable();
 
         List<Report> symbolTableReports = new BuildSymbolTableVisitor().visit(parserResult.getRootNode(), symbolTable);
-        List<Report> analysisReports = new AnalyseVisitor().visit(parserResult.getRootNode(), symbolTable);
+        Void analysis = new AnalyseVisitor().visit(parserResult.getRootNode(), symbolTable);
+        List<Report> analysisReports = analysis.getReports();
         List<Report> reports =  new ArrayList<>();
 
         return new JmmSemanticsResult(parserResult, symbolTable, reports);
