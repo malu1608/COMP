@@ -46,15 +46,15 @@ public class OllirUtils {
     }
     public static String parseType(String type) {
         if (type.equals("int"))
-            return "i32";
+            return ".i32";
         else if (type.equals("void"))
-            return "V";
+            return ".V";
         else if (type.equals("FALSE"))
             return "0.bool";
         else if (type.equals("TRUE"))
             return "1.bool";
         else if (type.equals("int array"))
-            return "array.i32";
+            return ".array.i32";
         return type;
     }
 }

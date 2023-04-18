@@ -37,7 +37,7 @@ public class Launcher {
         SimpleParser parser = new SimpleParser();
 
         // Parse stage
-        code = SpecsIo.read("test/pt/up/fe/comp/cp2/apps/HelloWorld.jmm");
+        code = SpecsIo.read("test/pt/up/fe/comp/cp2/jasmin/OllirToJasminBasic.jmm");
         JmmParserResult parserResult = parser.parse(code, config);
 
         // Check if there are parsing errors

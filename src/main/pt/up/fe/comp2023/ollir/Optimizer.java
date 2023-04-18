@@ -2,6 +2,7 @@ package pt.up.fe.comp2023.ollir;
 import pt.up.fe.comp.jmm.analysis.JmmSemanticsResult;
 import pt.up.fe.comp.jmm.ollir.JmmOptimization;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
+import pt.up.fe.comp2023.analysis.MySymbolTable;
 
 
 public class Optimizer implements JmmOptimization {
@@ -9,7 +10,7 @@ public class Optimizer implements JmmOptimization {
     @Override
     public OllirResult toOllir(JmmSemanticsResult jmmSemanticsResult) {
 
-        BuildOllirVisitor visitor = new BuildOllirVisitor(jmmSemanticsResult.getSymbolTable());
+        BuildOllirVisitor visitor = new BuildOllirVisitor((MySymbolTable) jmmSemanticsResult.getSymbolTable());
         //BuildOllirVisitor visitor = new buildVisitor();
         visitor.visit(jmmSemanticsResult.getRootNode());
         System.out.println("\n===================\n\n" + jmmSemanticsResult.getRootNode().toTree() + "\n===================\n");
