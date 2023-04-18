@@ -30,6 +30,7 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
         addVisit("This", this::visitThis);
         addVisit("Identifier", this::visitIdentifier);
         addVisit("Index", this::visitIndex);
+        addVisit("Length", this::visitLength);
     }
 
     private List<Report> visitClassDeclaration(JmmNode jmmNode, SymbolTable symbolTable) {
@@ -312,6 +313,17 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
             putUnknownType(jmmNode);
             reports.add(UtilsReport.createArrayRequiredReport(jmmNode.getJmmChild(0), operandType.print()));
         }
+        return reports;
+    }
+
+    private List<Report> visitLength(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+
+        Type operandType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
+
+        if(!operandType.getName().equals("#UNKNOWNTYPE") && !operandType.isArray())
+            reports.add(UtilsReport.createArrayRequiredReport(jmmNode.getJmmChild(0), operandType.print()));
+
         return reports;
     }
 
