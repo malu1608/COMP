@@ -42,7 +42,7 @@ public class OllirUtils {
         return code.toString();
     }
     public static String getCode(Type type) {
-        return getCode(type, false);
+        return getCode(type, true);
     }
     public static String parseType(String type) {
         if (type.equals("int"))

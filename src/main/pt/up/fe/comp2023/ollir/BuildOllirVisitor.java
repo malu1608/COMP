@@ -2,19 +2,9 @@ package pt.up.fe.comp2023.ollir;
 
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
-import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.AJmmVisitor;
 import pt.up.fe.comp.jmm.ast.JmmNode;
-import pt.up.fe.comp.jmm.report.Report;
-import pt.up.fe.comp2023.analysis.MySymbolTable;
-
-
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
-
 
 public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     private final SymbolTable table;
@@ -29,27 +19,37 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     protected void buildVisitor() {
         addVisit("Program",this::ProgramVisit);
         addVisit("ClassDeclaration", this::visitClassDeclaration);
-        //addVisit("MainDeclaration", this::visitMainDeclaration);
         addVisit("MethodDef", this::visitMethod);
+        addVisit("ObjectDeclaration", this::visitObjectMethod);
         setDefaultVisit(this::setDefault);
     }
-    /*
-    private String visitMainDeclaration(JmmNode jmmNode, String s) {
-        StringBuilder mainStr = new StringBuilder();
 
-        //mainStr.append("\n\t.method public static main(args.array.String).V {\n");
+    private String visitObjectMethod(JmmNode jmmNode, String s) {
+        StringBuilder methodStr = new StringBuilder();
 
-        for (JmmNode methodChild: jmmNode.getChildren()) {
-            mainStr.append(visit(methodChild));
+        JmmNode identifier = jmmNode.getChildren().get(0);
+        System.out.println("no:" + identifier);
+        JmmNode call = jmmNode.getChildren().get(1);
+
+        // Visitar filhos da call
+        // Construir lista de argumentos
+
+        boolean varinImports = false;
+        for (String imp : table.getImports()) {
+            if (imp.equals(identifier.get("name"))) varinImports=true;
+        }
+        System.out.println("ola");
+        System.out.println(identifier.getKind().equals("IDENTIFIER"));
+        if (identifier.getKind().equals("IDENTIFIER") && varinImports) {
+            methodStr.append("invokestatic(" + identifier.get("name") + ", \"" + call.get("name") + "\"");
+            if (call.getChildren().size() > 0)
+                methodStr.append(", ");
+            boolean grandchildren = false;
         }
 
-        mainStr.append("}\t}\n");
-        ollirCode += mainStr.toString();
+        ollirCode += methodStr.toString();
         return ollirCode;
-
     }
-*/
-
 
     private String setDefault(JmmNode jmmNode, String s) {
         StringBuilder visitStr = new StringBuilder();
@@ -66,6 +66,13 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     private String visitMethod(JmmNode jmmNode, String s) {
         StringBuilder mainStr = new StringBuilder();
 
+        List<String> methods = table.getMethods();
+        for (String method : methods){
+            if(method.equals(jmmNode.get("signature"))){
+                //duplicado erro do report
+                return "";
+            }
+        }
         ollirCode += ".method public ";
         if(jmmNode.get("name").equals("main")) {
             ollirCode += "static ";
@@ -75,37 +82,48 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         // Obter a lista de parâmetros do método
         List<Symbol> parameters = table.getParameters(jmmNode.get("name"));
         for (Symbol parameter : parameters) {
-            String paramName = parameter.getName();
+            System.out.println("parametro: " + parameter);
+            System.out.println(parameter.getType().isArray());
             boolean isArray = false;
-            if(parameter.getType().isArray()) isArray = true;
-            String paramTypeName = parameter.getType().getName();
-            //String paramTypeName = parseType(paramType.toString());
+            String typeName = parameter.getName();
+            if (parameter.getType().isArray()) {
+                typeName += ".array";
+                isArray = true;
+                mainStr.append(typeName + parameter.getType().getName() + ",");
+            }
 
-            mainStr.append(paramName + "." + "array" + "." + paramTypeName );
-            break;
+            else{
+                mainStr.append(parameter.getType().getName());
+            }
+            mainStr.append(" " + parameter.getName() + ",");
+        }
+        // remove the last comma
+        if (parameters.size() > 0) {
+            mainStr.deleteCharAt(mainStr.length() - 1);
         }
 
-        //mainStr.append("array.java.lang.String");
+        ollirCode += mainStr.toString() + ")" + ".V" + " {\n";
 
-        /*
-        if (mainStr.length() > 2) {
-            mainStr.delete(mainStr.length() - 2, mainStr.length());
-        }
-        */
-        ollirCode += mainStr.toString() + ")" + ".V" + " {";
-
-        /*
-
-        String parsed = parseType(table.getReturnType(method_signature).toString());
-        if (children)
-            mainStr.delete(mainStr.length() - 2, mainStr.length());
-        mainStr.append(")." + parseType(parsed + "{\n"));
+        // Visitar o corpo do método
         for (JmmNode child : jmmNode.getChildren()) {
-            if (child.getKind().equals("parameters")) continue;
-            mainStr.append(visit(child));
-        }*/
-        //mainStr.append("\t}\n");
+            System.out.println("child : " + child);
+            if(child.hasAttribute("name") && child.get("name").equals("void")){
+                ollirCode += "\nret.V";
+            }else{
+                for(JmmNode parameter : child.getChildren()){
+                    System.out.println("child2 : " + parameter);
+                    String getParamName = parameter.get("name");
+                    JmmNode String_Type = parameter.getChildren().get(jmmNode.get("isArray"));
+                    if(String_Type.get("isArray") == "true"){
+                        ollirCode+= getParamName + ".array"+ getParamName + ",";
+                    }
 
+                }
+            }
+            visit(child);
+        }
+
+        ollirCode += "\n}\n";
         return ollirCode;
     }
 
