@@ -27,6 +27,9 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
         addVisit("NotExpression", this::visitNotExpression);
         addVisit("IntArrayAllocation", this::visitIntArrayAllocation);
         addVisit("ObjectAllocation", this::visitObjectAllocation);
+        addVisit("This", this::visitThis);
+        addVisit("Identifier", this::visitIdentifier);
+        addVisit("Index", this::visitIndex);
     }
 
     private List<Report> visitClassDeclaration(JmmNode jmmNode, SymbolTable symbolTable) {
@@ -256,6 +259,71 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
             return reports;
         }
         return checkTypeImport(jmmNode, symbolTable);
+    }
+
+    private List<Report> visitThis (JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+
+        putType(jmmNode, new Type(symbolTable.getClassName(), false));
+        return reports;
+    }
+
+    private List<Report> visitIdentifier(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+
+        String identifier = jmmNode.get("name");
+        String methodSignature = getMethodSignature(jmmNode);
+
+        Optional<Symbol> parameterSymbol = symbolTable.getParameters(methodSignature).stream()
+                .filter(p -> p.getName().equals(identifier)).findFirst();
+        Optional<Symbol> localVarSymbol = symbolTable.getLocalVariables(methodSignature).stream()
+                .filter(l -> l.getName().equals(identifier)).findFirst();
+        Optional<Symbol> fieldSymbol = symbolTable.getFields().stream()
+                .filter(f -> f.getName().equals(identifier)).findFirst();
+
+        if (parameterSymbol.isPresent()) {
+            putType(jmmNode, parameterSymbol.get().getType());
+        } else if (localVarSymbol.isPresent()) {
+            putType(jmmNode, localVarSymbol.get().getType());
+        } else if (fieldSymbol.isPresent()) {
+            putType(jmmNode, fieldSymbol.get().getType());
+        } else if (shouldPutUnknownType(jmmNode, symbolTable, identifier)) {
+            putUnknownType(jmmNode);
+            reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, identifier));
+        }
+
+        return reports;
+    }
+
+    private List<Report> visitIndex(JmmNode jmmNode, SymbolTable symbolTable) {
+        List<Report> reports = new ArrayList<>();
+
+        Type operandType = UtilsAnalyser.getType(jmmNode.getJmmChild(0));
+        Type indexType = UtilsAnalyser.getType(jmmNode.getJmmChild(1));
+
+        if(!indexType.getName().equals("#UNKNOWNTYPE") && (!indexType.getName().equals("int") || indexType.isArray())){
+            reports.add(UtilsReport.typeConversionErrorReport(jmmNode.getJmmChild(1), indexType.print(), "int"));
+        }
+        if(operandType.getName().equals("#UNKNOWNTYPE"))
+            putUnknownType(jmmNode);
+        else if(!operandType.isArray()){
+            putType(jmmNode, new Type(operandType.getName(), false));
+        } else {
+            putUnknownType(jmmNode);
+            reports.add(UtilsReport.createArrayRequiredReport(jmmNode.getJmmChild(0), operandType.print()));
+        }
+        return reports;
+    }
+
+    // Helper method to get the method signature for the given identifier
+    private String getMethodSignature(JmmNode jmmNode) {
+        return jmmNode.getAncestor("MethodDef").or(() -> jmmNode.getAncestor("MainMethodDef")).get().get("signature");
+    }
+
+    // Helper method to check if the identifier should have an unknown type
+    private boolean shouldPutUnknownType(JmmNode jmmNode, SymbolTable symbolTable, String identifier) {
+        return !jmmNode.getJmmParent().getKind().equals("MethodCall")
+                || (!symbolTable.getClassName().equals(identifier) && !symbolTable.getImports().contains(identifier));
     }
 
     private List<Report> getReports(JmmNode jmmNode, List<Report> reports, Type leftType, Type rightType) {

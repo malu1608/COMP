@@ -82,4 +82,11 @@ public class UtilsReport {
                 "'";
         return baseReport(at, ReportType.ERROR, Stage.SEMANTIC, message);
     }
+
+    public static Report createArrayRequiredReport(JmmNode at, String foundType) {
+        String message = "array required, but '" +
+                foundType +
+                "' found";
+        return baseReport(at, ReportType.ERROR, Stage.SEMANTIC, message);
+    }
 }
