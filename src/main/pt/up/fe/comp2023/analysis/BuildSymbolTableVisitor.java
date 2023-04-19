@@ -122,4 +122,6 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
 
         return reports;
     }
+
+
 }

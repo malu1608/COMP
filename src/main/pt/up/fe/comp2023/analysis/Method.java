@@ -28,4 +28,17 @@ public class Method {
     public List<Symbol> getLocalVariables() {
         return variables;
     }
+    public Symbol getLocalVariable(int index) {
+        return variables.get(index);
+    }
+
+    public Symbol getLocalVariable(String varName) {
+        for( Symbol symbol: variables) {
+            if(symbol.getName().equals(varName)) return symbol;
+        }
+        for (Symbol symbol: parameters) {
+            if(symbol.getName().equals(varName)) return symbol;
+        }
+        return null;
+    }
 }

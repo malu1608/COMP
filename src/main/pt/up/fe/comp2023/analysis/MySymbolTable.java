@@ -76,4 +76,25 @@ public class MySymbolTable implements SymbolTable {
         this.superName = superName;
     }
 
+    public boolean checkVariableInImports(String variableName) {
+        for (String imp : getImports()) {
+            if (imp.equals(variableName)) return true;
+        }
+        return false;
+    }
+    public Symbol getField(String fieldName) {
+        for (Symbol symbol: getFields()) {
+            if (symbol.getName().equals(fieldName)) return symbol;
+        }
+        return null;
+    }
+    public Method getMethod(String methodName) {
+        return this.methodsList.get(methodName);
+    }
+    public Symbol getVariable(String variableName, String methodName) {
+        Symbol globalVar = this.getField(variableName);
+        Symbol localVar = this.getMethod(methodName).getLocalVariable(variableName);
+        return localVar != null ? localVar : globalVar;
+    }
+
 }
