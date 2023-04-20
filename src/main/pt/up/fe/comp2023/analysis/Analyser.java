@@ -17,7 +17,7 @@ public class Analyser implements JmmAnalysis {
         AnalyseVisitor visitor = new AnalyseVisitor();
         visitor.visit(parserResult.getRootNode(), symbolTable);
         List<Report> reports = visitor.getReports();
-g
+
         return new JmmSemanticsResult(parserResult, symbolTable, reports);
     }
 }
