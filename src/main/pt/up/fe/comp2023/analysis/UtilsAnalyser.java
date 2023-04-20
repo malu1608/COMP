@@ -8,7 +8,7 @@ import java.util.List;
 public class UtilsAnalyser {
     public static Type getType(JmmNode jmmNode) {
         boolean isArray = jmmNode.getAttributes().contains("isArray") && jmmNode.get("isArray").equals("true");
-        return new Type(jmmNode.get("name"), isArray);
+        return new Type(jmmNode.get("type"), isArray);
     }
 
     public static Symbol getSymbol(JmmNode jmmNode) {

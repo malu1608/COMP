@@ -14,10 +14,10 @@ public class Analyser implements JmmAnalysis {
         MySymbolTable symbolTable = new MySymbolTable();
 
         List<Report> symbolTableReports = new BuildSymbolTableVisitor().visit(parserResult.getRootNode(), symbolTable);
-        Void analysis = new AnalyseVisitor().visit(parserResult.getRootNode(), symbolTable);
-        List<Report> analysisReports = analysis.getReports();
-        List<Report> reports =  new ArrayList<>();
-
+        AnalyseVisitor visitor = new AnalyseVisitor();
+        visitor.visit(parserResult.getRootNode(), symbolTable);
+        List<Report> reports = visitor.getReports();
+g
         return new JmmSemanticsResult(parserResult, symbolTable, reports);
     }
 }

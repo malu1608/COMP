@@ -6,7 +6,7 @@ import pt.up.fe.comp.jmm.report.ReportType;
 import pt.up.fe.comp.jmm.report.Stage;
 public class UtilsReport {
     private static Report baseReport(JmmNode at, ReportType type, Stage stage, String message) {
-        return new Report(type, stage, Integer.parseInt(at.get("line")), Integer.parseInt(at.get("col")), message);
+        return new Report(type, stage, Integer.parseInt(at.get("lineStart")), Integer.parseInt(at.get("colStart")), message);
     }
 
     public static Report cyclicInheritance(JmmNode at, String type) {

@@ -39,6 +39,11 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, Void> {
         addVisit("Index", this::visitIndex);
         addVisit("Length", this::visitLength);
 
+        addVisit("IntType", this::visitType);
+        addVisit("StringType", this::visitType);
+        addVisit("BooleanType", this::visitType);
+        addVisit("IDType", this::visitType);
+
         setDefaultVisit(this::defaultVisit);
     }
 
@@ -51,7 +56,6 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, Void> {
     }
 
     private Void visitClassDeclaration(JmmNode jmmNode, SymbolTable symbolTable) {
-
         if (!jmmNode.getAttributes().contains("extends"))
             return null;
 
@@ -69,14 +73,17 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, Void> {
 
         if (foundImport)
             return null;
-
+        System.out.println("visitClassDeclaration");
         reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, extendsName));
 
         return null;
     }
 
     private Void visitType(JmmNode jmmNode, SymbolTable symbolTable) {
-        Type objType = UtilsAnalyser.getType(jmmNode);
+        boolean isArray = jmmNode.getAttributes().contains("isArray") && jmmNode.get("isArray").equals("true");
+        Type objType = new Type(jmmNode.get("name"), isArray);
+
+        putType(jmmNode, objType);
 
         if (TYPES.contains(objType.getName()))
             return null;
@@ -115,6 +122,7 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, Void> {
                     reports.add(UtilsReport.NonStaticInStaticContext(jmmNode, symbolName));
                 } else if (symbolTable.getSuper() == null) {
                     String symbolName = UtilsAnalyser.getMethodSymbolName(methodSignature);
+                    System.out.println("visitMethodCall");
                     reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, symbolName));
                 }
             }
@@ -141,6 +149,7 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, Void> {
         } else {
             if (symbolTable.getSuper() == null) {
                 String symbolName = UtilsAnalyser.getMethodSymbolName(methodSignature);
+                System.out.println("visitMethodCall");
                 reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, symbolName));
             }
             putUnknownType(jmmNode);
@@ -282,7 +291,7 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, Void> {
 
     private Void visitIdentifier(JmmNode jmmNode, SymbolTable symbolTable) {
 
-        String identifier = jmmNode.get("name");
+        String identifier = jmmNode.get("value");
         String methodSignature = getMethodSignature(jmmNode);
 
         Optional<Symbol> parameterSymbol = symbolTable.getParameters(methodSignature).stream()
@@ -300,6 +309,7 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, Void> {
             putType(jmmNode, fieldSymbol.get().getType());
         } else if (shouldPutUnknownType(jmmNode, symbolTable, identifier)) {
             putUnknownType(jmmNode);
+            System.out.println("visitIdentifier");
             reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, identifier));
         }
 
@@ -362,7 +372,7 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, Void> {
 
         if (foundImport)
             return null;
-
+        System.out.println("checkTypeImport");
         reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, objType.getName()));
 
         return null;
