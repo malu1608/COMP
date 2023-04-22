@@ -91,7 +91,7 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
             if (child.getKind().equals("VarDecl")) {
                 String name = child.get("name");
                 isArray = child.getAttributes().contains("isArray") && child.get("isArray").equals("true");
-                Type type = new Type(child.get("name"), isArray);
+                Type type = new Type(child.getJmmChild(0).get("name"), isArray);
                 Symbol symbol = new Symbol(type, name);
                 variables.add(symbol);
 

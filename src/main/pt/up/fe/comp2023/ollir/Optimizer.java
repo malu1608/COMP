@@ -13,10 +13,10 @@ public class Optimizer implements JmmOptimization {
         BuildOllirVisitor visitor = new BuildOllirVisitor((MySymbolTable) jmmSemanticsResult.getSymbolTable());
         //BuildOllirVisitor visitor = new buildVisitor();
         visitor.visit(jmmSemanticsResult.getRootNode());
-        System.out.println("\n===================\n\n" + jmmSemanticsResult.getRootNode().toTree() + "\n===================\n");
+        //System.out.println("\n===================\n\n" + jmmSemanticsResult.getRootNode().toTree() + "\n===================\n");
         String ollirCode = visitor.getCode();
 
-        System.out.println("OLLIR CODE : \n" + ollirCode);
+        //System.out.println("OLLIR CODE : \n" + ollirCode);
         //        String ollirCode = "import ioPlus;\n" +
 //                "import BoardBase;\n" +
 //                "import java.io.File;\n" +

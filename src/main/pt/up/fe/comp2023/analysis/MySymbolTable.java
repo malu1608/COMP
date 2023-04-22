@@ -97,4 +97,14 @@ public class MySymbolTable implements SymbolTable {
         return localVar != null ? localVar : globalVar;
     }
 
+    public int getParameter(String methodName, String varName){
+        int index = 1;
+        for (Symbol parameter : getParameters(methodName)) {
+            if(parameter.getName().equals(varName))
+                return index;
+            index++;
+        }
+        return -1;
+    }
+
 }

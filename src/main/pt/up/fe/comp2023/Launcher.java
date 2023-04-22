@@ -37,9 +37,9 @@ public class Launcher {
         SimpleParser parser = new SimpleParser();
 
         // Parse stage
-        code = SpecsIo.read("test/pt/up/fe/comp/cp2/jasmin/OllirToJasminBasic.jmm");
+        code = SpecsIo.read("test/pt/up/fe/comp/cp2/ollir/CompileArithmetic.jmm");
         JmmParserResult parserResult = parser.parse(code, config);
-
+        System.out.println(parserResult.getRootNode().toTree());
         // Check if there are parsing errors
         TestUtils.noErrors(parserResult.getReports());
 
@@ -55,7 +55,7 @@ public class Launcher {
         System.out.println("Ollir code:\n---------\n" + optimizer.toOllir(analyser.semanticAnalysis(parserResult)).getOllirCode());
 
         // ... add remaining stages
-        //System.out.println(parserResult.getRootNode().toTree());
+
     }
 
     private static Map<String, String> parseArgs(String[] args) {

@@ -54,6 +54,7 @@ expression
     | 'new' 'int' '[' expression ']' #NewIntArray
     | 'new' value=ID '(' ')' #NewObject
     | value=INTEGER #INTEGER
+    | value=('false' | 'true') #BOOLEAN
     | value= ID #Identifier;
 
 
