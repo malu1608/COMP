@@ -41,6 +41,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         addVisit("Identifier", this::visitRetStat);
         addVisit("INTEGER",this::visitRetStat);
         addVisit("BinaryOp", this::visitRetStat);
+        addVisit("BooleanType", this::visitRetStat);
         addVisit("AssignStat", this::visitAssignment);
         addVisit("Identifier", this::visitBinaryOp);
         setDefaultVisit(this::setDefault);
@@ -102,9 +103,6 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
                 value_child = symbol.getType().getName();
             }
         }
-        //System.out.println("oi"+child.getAncestor("VarDecl").get().equals(child.get("value")));
-        //if(child.getKind().equals("Identifier") ) {value_child = child.getAncestor("VarDecl").get().getJmmChild(0).get("name");}
-
 
         ollirCode += "\t\t" + var_name + parseType(value_child) +" " +assign + parseType(assign)  +" "+ var +  parseType(value_child) + ";\n";
 
@@ -113,11 +111,15 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
     private String visitRetStat(JmmNode jmmNode, String s) {
 
-        if(jmmNode.getKind().equals("Identifier")){ //identifier e a variavel retornada , o seu tipo e do type
-            String boolString = jmmNode.get("value");
+        if(jmmNode.getKind().equals("BooleanType")){
+            String ret_type = jmmNode.get("name");
+            if(jmmNode.getJmmParent().getJmmChild(jmmNode.getJmmParent().getNumChildren()-1).getKind().equals("Identifier")){ //identifier e a variavel retornada , o seu tipo e do type
+                String name_param = jmmNode.getJmmParent().getJmmChild(jmmNode.getJmmParent().getNumChildren()-1).get("value");
 
-            ollirCode += "\t\tret" +  parseType(boolString) + " "+jmmNode.get("value").toString()+ parseType(boolString) + ";\n";
+                ollirCode += "\t\tret" +  parseType(ret_type) + " "+ name_param + parseType(ret_type) + ";\n";
+            }
         }
+
         else if(jmmNode.getKind().equals("INTEGER")){
             String type = "int";
             ollirCode += "\t\tret" +  parseType(type) + " " + jmmNode.get("value").toString() + parseType(type) + ";\n";
@@ -125,16 +127,11 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         else if(jmmNode.getKind().equals("BinaryOp")){
             //WHILE?
-            String methodName = jmmNode.getJmmParent().get("name");
-            Type retType = table.getReturnType(methodName);
-            String getretType = parseType(retType.getName());
-            Boolean getretTypeisArray = retType.isArray();
-            String operator = jmmNode.get("op");
             ollirCode+= "\t\tret" + parseType(table.getReturnType(jmmNode.getJmmParent().get("name").toString()).getName()) + " "  ;
+
+            //Visit Identifiers
             for(JmmNode child: jmmNode.getChildren()){
-
                 visit(child,jmmNode.getJmmParent().get("name"));
-
             }
 
         }
@@ -142,18 +139,17 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     }
 
     private String ProgramVisit(JmmNode jmmNode, String s) {
-        //List<Report> reports = new ArrayList<>();
-        if (visit(jmmNode.getChildren().get(0)) == null) return "erro";
+
+        if (jmmNode.getNumChildren() == 0) return "erro";
         else {
             for (String importString : table.getImports()) {
                 ollirCode += "import " + importString + ";\n";
             }
             ollirCode += "\n";
             for(JmmNode child : jmmNode.getChildren()){
-                //System.out.println("especie de filho:"+child.getKind());
+
                 if(!child.getKind().equals("ImportDecl"))
                 {
-                    System.out.println("pai: " + child);
                     visit(child);
                 }
 
@@ -172,7 +168,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         String super_class = table.getSuper();
 
         //se string nao nula adiciona extends e o nome da classe
-        ollirCode += class_name + (super_class != null ? " extends " + super_class : "") + " {\n\n";
+        ollirCode += class_name + (super_class != null ? " extends " + super_class : "") + " {\n";
 
         //field da classe
         for(var field: table.getFields()){
@@ -182,17 +178,17 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         boolean hasConstructor = false;
 
         for (JmmNode child : jmmNode.getChildren()) {
-            //System.out.println("child: " + child);
+
             if (!child.getKind().equals("VarDecl")&&
                     !hasConstructor) {
                 ollirCode+= emptyConstructor();
                 hasConstructor = true;
 
             }
-            System.out.println("pai classe: " + child);
+
             visit(child);
         }
-        ollirCode += "\n}\n";
+        ollirCode += "\n}";
         return ollirCode;
     }
     private String visitMethod(JmmNode jmmNode, String s) {
@@ -232,7 +228,6 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         }
         ollirCode += ")" + parseType(jmmNode.getJmmChild(0).get("name"))+ " {\n";
 
-        //ollirCode += table.getLocalVariables(jmmNode.get("name"));
         StringBuilder methodStr = new StringBuilder();
         for (JmmNode child : jmmNode.getChildren()) {
             visit(child);
@@ -241,8 +236,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         if (table.getReturnType(jmmNode.get("name")).getName().equals("void")) {
             ollirCode += "\t\tret" + parseType(table.getReturnType(jmmNode.get("name")).getName()) + ";\n";
         }
-        ollirCode += "\t\n\t}\n\n";
-
+        ollirCode += "\t\n\t}\n";
         return ollirCode;
     }
 

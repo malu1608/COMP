@@ -37,7 +37,7 @@ public class Launcher {
         SimpleParser parser = new SimpleParser();
 
         // Parse stage
-        code = SpecsIo.read("test/pt/up/fe/comp/cp2/ollir/CompileArithmetic.jmm");
+        code = SpecsIo.read("test/pt/up/fe/comp/cp2/ollir/CompileBasic.jmm");
         JmmParserResult parserResult = parser.parse(code, config);
         System.out.println(parserResult.getRootNode().toTree());
         // Check if there are parsing errors

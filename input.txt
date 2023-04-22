@@ -1,37 +1,21 @@
-import utils.M;
-import utils.N.hey;
 
-class HelloWorld {
+CompileArithmetic {
 
-    public int computeFac ( int num ){
-        int num_aux;
-        int[] a;
-        if (num < 1 && 3-1 < 4/2 && true)
-            num_aux = 1;
-        else
-            num_aux = num * (this.computeFac(num -1));
-        return num_aux;
-    }
-    //class main
-    /*
-    yo
-    */
 
-    public static void main(String[] args) {
-        M a;
-        a = M.foo();
-        a.bar(10);
-        b = !c + d;
+	.construct CompileArithmetic().V {
+		invokespecial(this, "<init>").V;
+	}
 
-        a = b * this.m(10,20);
+	.method public static main(args.array.String).V {
+		ret.V;
 
-        new Soup();
-        if (true) {
-            out.println(hey);
-        } else {
-            out.length;
-        }
+	}
 
-        io.println ( new Fac().computeFac(10));
-    }
+	.method public foo().i32 {
+		a.i32 :=.i32 1.i32;
+		b.i32 :=.i32 2.i32;
+		ret.i32 a.i32 +.i32 b.i32;
+	}
+
+
 }

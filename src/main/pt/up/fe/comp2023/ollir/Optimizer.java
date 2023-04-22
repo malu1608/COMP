@@ -13,8 +13,9 @@ public class Optimizer implements JmmOptimization {
         BuildOllirVisitor visitor = new BuildOllirVisitor((MySymbolTable) jmmSemanticsResult.getSymbolTable());
         //BuildOllirVisitor visitor = new buildVisitor();
         visitor.visit(jmmSemanticsResult.getRootNode());
-        //System.out.println("\n===================\n\n" + jmmSemanticsResult.getRootNode().toTree() + "\n===================\n");
+
         String ollirCode = visitor.getCode();
+        //System.out.println("\n===================\n" + ollirCode + "\n===================\n");
 
         //System.out.println("OLLIR CODE : \n" + ollirCode);
         //        String ollirCode = "import ioPlus;\n" +
