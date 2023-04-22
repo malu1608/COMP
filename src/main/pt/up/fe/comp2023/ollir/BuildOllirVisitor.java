@@ -17,9 +17,7 @@ import static java.util.logging.Logger.global;
 
 //TODO
 /*
-* getLocalVar e tipo dos metodos (que se coloca no fim)- mariana
-* returns (quando se alterar a declaraçao do metodo para type colocar type no visitRet stat p/eliminar ma pratica)
-* reports
+* method calls !!!
 * lidar com arrays
 *
 */
