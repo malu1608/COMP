@@ -96,12 +96,12 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         String var_name = jmmNode.get("value"); //assignStat
         var idType = getOllirType(var_name);
 
-        var child = visit(jmmNode.getJmmChild(0));
+        var child = visit(jmmNode.getJmmChild(0),idType);
         var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
         ollirCode += assign;
 
         if(jmmNode.getJmmChild(0).getKind().equals("NewObject")){
-            ollirCode += "invokespecial(" + idType + ", \"<init>\").V;\n";
+            ollirCode += "\t\t"+"invokespecial(" + idType + ", \"<init>\").V;\n";
         }
 
         return ollirCode;
@@ -138,7 +138,6 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             var varName = jmmNode.getJmmChild(0).getJmmChild(0).get("value");
             var id = visit(jmmNode.getJmmChild(0));
             ollirCode += "\t\tret" +  getOllirType(varName) + " "+ id +  ";\n";
-
         }
 
         else if(jmmNode.getJmmChild(0).getKind().equals("Integer")){
@@ -156,11 +155,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         return ollirCode;
     }
 
-    private String visitNewObject (JmmNode jmmNode, String methodName) {
-        ollirCode += "new(" + jmmNode.get("value") + ")." + jmmNode.get("value")+";\n";
-        //ollirCode += "\t\tinvokespecial("+ jmmNode.getJmmParent().get("value") + "." + jmmNode.get("value") +"," + "\" <init> \").V;\n";
-        return ollirCode;
-    }
+
 
     private String ProgramVisit(JmmNode jmmNode, String s) {
 
@@ -272,7 +267,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         String idType = getOllirType(identifier.get("value"));
         StringBuilder code = new StringBuilder();
-        String returnType = ".V";
+
         if (identifier.getKind().equals("Identifier") && table.checkVariableInImports(identifier.get("value"))) {
             code.append("\t\tinvokestatic("  + identifier.get("value")   + ", \"" + methodCall.get("name") + "\"");
 
@@ -326,6 +321,12 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         return "." + type;
     }
 
+    private String visitNewObject (JmmNode jmmNode, String idType) {
+
+        //ollirCode += "new(" + jmmNode.get("value") + ")." + jmmNode.get("value")+";\n";
+        //ollirCode += "\t\tinvokespecial("+ jmmNode.getJmmParent().get("value") + "." + jmmNode.get("value") +"," + "\" <init> \").V;\n";
+        return "new(" + jmmNode.get("value") + ")" + idType;
+    }
     public String getCode(){
         return ollirCode;}
 
