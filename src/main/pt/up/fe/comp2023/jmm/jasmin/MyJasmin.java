@@ -41,6 +41,14 @@ public class MyJasmin implements JasminBackend {
         for (Field field : this.ollirClassUnit.getFields()) {
             jasminCode.append(".field " + getJasminCode(field) + "\n");
         }
+
+        // Super constructor
+        jasminCode.append(".method public <init>()V\n" +
+                "aload_0\n" +
+                "invokespecial " + superClass + "/<init>()V\n" +
+                "return\n" +
+                ".end method\n\n");
+
         return jasminCode.toString();
     }
 
