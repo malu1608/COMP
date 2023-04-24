@@ -49,6 +49,13 @@ public class MyJasmin implements JasminBackend {
                 "return\n" +
                 ".end method\n\n");
 
+        // Methods
+        for (Method method : this.ollirClassUnit.getMethods()) {
+            if (!method.isConstructMethod()) {
+                jasminCode.append(".method " + getJasminCode(method));
+            }
+        }
+
         return jasminCode.toString();
     }
 
@@ -120,4 +127,48 @@ public class MyJasmin implements JasminBackend {
         throw new NotImplementedException(fieldType);
     }
 
+    private String getJasminCode(Method method) {
+        StringBuilder code = new StringBuilder();
+
+        // Modifiers
+        AccessModifiers accessModifier = method.getMethodAccessModifier();
+        if (accessModifier != AccessModifiers.DEFAULT) {
+            code.append(accessModifier.name().toLowerCase() + " ");
+        }
+        if (method.isStaticMethod())
+            code.append("static ");
+
+        if (method.isFinalMethod()) {
+            code.append("final ");
+        }
+
+        code.append(method.getMethodName() + "(");
+
+        //Parameters
+        for (Element element : method.getParams()) {
+            String paramCode = getJasminCode(element.getType());
+            code.append(paramCode);
+        }
+
+        code.append(")");
+
+        //Return Type
+        String jasminMethodReturnType = getJasminCode(method.getReturnType());
+        code.append(jasminMethodReturnType + "\n");
+
+        //Inside method
+        code.append(".limit stack 99\n" + ".limit locals 99\n");
+        for (Instruction instruction : method.getInstructions()) {
+            String jasminMethodInstr = getJasminCode(method, instruction);
+            code.append(jasminMethodInstr);
+        }
+
+        code.append(".end method\n");
+
+        return code.toString();
+    }
+
+    private String getJasminCode(Method method, Instruction instruction) {
+
+    }
 }
