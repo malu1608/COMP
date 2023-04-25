@@ -24,7 +24,9 @@ parameter: type name=ID #Param;
 
 parameters : (parameter (',' parameter)*)? #Params;
 
-methodDeclaration : ('public')? ('static')? type name=ID '(' parameters ')' '{' (varDeclaration | statement )* ('return' expression ';')? '}' #MethodDef;
+//methodDeclaration : ('public')? ('static')? type name=ID '(' parameters ')' '{' (varDeclaration | statement )* ('return' expression ';')? '}' #MethodDef;
+
+methodDeclaration : ('public')? ('static')? type name=ID '(' parameters ')' '{' (varDeclaration | statement )* (statement)? '}' #MethodDef;
 
 type locals[boolean isArray=false]
     : name='int' ('[' ']' {$isArray=true;})? #IntType
@@ -39,7 +41,12 @@ statement : '{' (statement)* '}' #Stat
     | expression ';' #ExpStat
     | value=ID '=' expression ';' #AssignStat
     | value=ID '[' expression ']' '=' expression ';' #ArrayAssignStat
+    | 'return' expression ';' #ReturnStmt
     ;
+
+//returnStmt:
+
+
 
 expression
     : '!' expression #Not
@@ -53,7 +60,8 @@ expression
     | expression '.' name=ID '(' (expression (',' expression)*)? ')' #MethodCall
     | 'new' 'int' '[' expression ']' #NewIntArray
     | 'new' value=ID '(' ')' #NewObject
-    | value=INTEGER #INTEGER
+    | value=INTEGER #Integer
+    | value=('false' | 'true') #Boolean
     | value= ID #Identifier;
 
 

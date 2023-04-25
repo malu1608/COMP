@@ -4,10 +4,7 @@ import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 
 public class MySymbolTable implements SymbolTable {
     private List<String> importList = new ArrayList<>();
@@ -41,19 +38,30 @@ public class MySymbolTable implements SymbolTable {
         return new ArrayList<>(methodsList.keySet());
     }
 
+    private Method getMethodInternal(String s) {
+        var method = methodsList.get(s);
+
+        if(method == null) {
+            method = new Method(null, Collections.emptyList(), Collections.emptyList());
+        }
+
+        return method;
+    }
+
     @Override
     public Type getReturnType(String s) {
-        return methodsList.get(s).getReturnType();
+        return getMethodInternal(s).getReturnType();
     }
 
     @Override
     public List<Symbol> getParameters(String s) {
-        return methodsList.get(s).getParameters();
+        return getMethodInternal(s).getParameters();
     }
 
     @Override
     public List<Symbol> getLocalVariables(String s) {
-        return methodsList.get(s).getLocalVariables();
+        
+        return getMethodInternal(s).getLocalVariables();
     }
 
     public void addImport(String _import) {
@@ -75,5 +83,33 @@ public class MySymbolTable implements SymbolTable {
     public void setSuper(String superName) {
         this.superName = superName;
     }
+
+    public boolean checkVariableInImports(String variableName) {
+        for (String imp : getImports()) {
+            if (imp.equals(variableName)) return true;
+        }
+        return false;
+    }
+    public Symbol getField(String fieldName) {
+        for (Symbol symbol: getFields()) {
+            if (symbol.getName().equals(fieldName)) return symbol;
+        }
+        return null;
+    }
+    public Method getMethod(String methodName) {
+        return this.methodsList.get(methodName);
+    }
+
+
+
+    public Symbol getVariable(String variableName, String methodName) {
+        Symbol globalVar = this.getField(variableName);
+        Symbol localVar = this.getMethod(methodName).getLocalVariable(variableName);
+        return localVar != null ? localVar : globalVar;
+    }
+    public boolean isGlobal(String variableName) {
+        return this.getField(variableName) != null;
+    }
+
 
 }
