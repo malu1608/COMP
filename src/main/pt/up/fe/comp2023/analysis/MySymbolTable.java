@@ -99,20 +99,17 @@ public class MySymbolTable implements SymbolTable {
     public Method getMethod(String methodName) {
         return this.methodsList.get(methodName);
     }
+
+
+
     public Symbol getVariable(String variableName, String methodName) {
         Symbol globalVar = this.getField(variableName);
         Symbol localVar = this.getMethod(methodName).getLocalVariable(variableName);
         return localVar != null ? localVar : globalVar;
     }
-
-    public int getParameter(String methodName, String varName){
-        int index = 1;
-        for (Symbol parameter : getParameters(methodName)) {
-            if(parameter.getName().equals(varName))
-                return index;
-            index++;
-        }
-        return -1;
+    public boolean isGlobal(String variableName) {
+        return this.getField(variableName) != null;
     }
+
 
 }

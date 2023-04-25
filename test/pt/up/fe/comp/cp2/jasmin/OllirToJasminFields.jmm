@@ -1,6 +1,6 @@
 class OllirToJasminFields {
 
-    intField;
+    int intField;
 
     public static void main(String[] args) {
 

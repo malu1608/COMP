@@ -25,6 +25,7 @@ public class Method {
         return parameters;
     }
 
+
     public List<Symbol> getLocalVariables() {
         return variables;
     }

@@ -1,10 +1,7 @@
 package pt.up.fe.comp2023.ollir;
 
 
-import com.google.gson.internal.bind.util.ISO8601Utils;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
-import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
-import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.AJmmVisitor;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp2023.analysis.MySymbolTable;
@@ -59,6 +56,10 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
     private String visitIdentifier(JmmNode jmmNode, String methodName) {
         var varName = jmmNode.get("value");
+        if(getOllirType(varName).equals(varName)){
+            return "getfield(this, " +  varName + methodName +")" + methodName ;
+        }
+
         return varName + getOllirType(varName);
     }
 
@@ -67,21 +68,27 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         tempCounter++;
         return result;
     }
+    private String getParameters(String methodName, String varName){
+
+        for (Symbol parameter : table.getParameters(methodName)) {
+            if(parameter.getName().equals(varName))
+                return varName;
+
+        }
+        return "";
+    }
+
 
 
     private String visitBinaryOp(JmmNode jmmNode, String methodName) {
         var op = jmmNode.get("op");
-        // TODO: not all op are int
-
-
-        var resultType = parseType("int");
-
+        var assign_type = getAssigmentRetType(op);
+        var resultType = assign_type;
 
         var lhsValue = visit(jmmNode.getJmmChild(0) );
         var rhsValue =  visit(jmmNode.getJmmChild(1) );
 
         var result = nextTemp()  + resultType;
-        //System.out.println("BEFORE: " + ollirCode);
 
         var binOpCode = result + " :="+resultType + " " + lhsValue + " "+ op+resultType+" "
                 + rhsValue +  ";\n";
@@ -94,14 +101,22 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     private String visitAssignment(JmmNode jmmNode, String s) {
 
         String var_name = jmmNode.get("value"); //assignStat
-        var idType = getOllirType(var_name);
 
+        var idType = getOllirType(var_name);
         var child = visit(jmmNode.getJmmChild(0),idType);
+
+        if(table.isGlobal(var_name))
+            ollirCode += "\t\tputfield(this, " + var_name + idType +  ", " + child +")" + idType +  ".V;\n";
+        /*
+        else if(var_name.equals(getParameters(jmmNode.getJmmParent().get("name"),var_name))){
+            ollirCode += "$.";
+        }*/
+
         var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
         ollirCode += assign;
 
         if(jmmNode.getJmmChild(0).getKind().equals("NewObject")){
-            ollirCode += "\t\t"+"invokespecial(" + idType + ", \"<init>\").V;\n";
+            ollirCode += "\t\t"+"invokespecial(" + var_name+ idType + ", \"<init>\").V;\n";
         }
 
         return ollirCode;
@@ -322,13 +337,18 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     }
 
     private String visitNewObject (JmmNode jmmNode, String idType) {
-
-        //ollirCode += "new(" + jmmNode.get("value") + ")." + jmmNode.get("value")+";\n";
-        //ollirCode += "\t\tinvokespecial("+ jmmNode.getJmmParent().get("value") + "." + jmmNode.get("value") +"," + "\" <init> \").V;\n";
         return "new(" + jmmNode.get("value") + ")" + idType;
     }
     public String getCode(){
         return ollirCode;}
+
+    private String getAssigmentRetType(String op) {
+        return switch (op) {
+            case "+", "-", "*", "/" -> ".i32";
+            case "&&", "<", "==", "!=" -> ".bool";
+            default -> "." +op;
+        };
+    }
 
 }
 

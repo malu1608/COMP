@@ -78,6 +78,8 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
         return reports;
     }
 
+
+
     private List<Report> visitMethod(JmmNode jmmNode, MySymbolTable table) {
         List<Report> reports = new ArrayList<>();
 
