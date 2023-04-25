@@ -8,6 +8,7 @@ import pt.up.fe.comp.jmm.report.Report;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Report>> {
@@ -39,17 +40,10 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
 
     private List<Report> visitImport(JmmNode jmmNode, MySymbolTable table) {
         List<Report> reports = new ArrayList<>();
-        var importPath = jmmNode.get("path");
+        ArrayList<String> importPath = (ArrayList<String>) jmmNode.getObject("path");
 
-        var importStream = jmmNode.getChildren().stream()
-                .map(id -> id.get("path"))
-                .collect(Collectors.joining("."));
-
-        if (importStream.equals("")) {
-            table.addImport(importPath);
-        } else {
-            table.addImport(importPath + "." + importStream);
-        }
+        String imports = String.join(".",importPath);
+        table.addImport(imports);
 
         return reports;
     }

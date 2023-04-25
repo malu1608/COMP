@@ -14,7 +14,7 @@ MLC : '/*' .*? '*/' -> skip ;
 program
     : (importDeclaration)* classDeclaration EOF;
 
-importDeclaration: 'import' path=ID ( '.' path=ID )* ';' #ImportDecl;
+importDeclaration: 'import' path+=ID ( '.' path+=ID )* ';' #ImportDecl;
 
 classDeclaration : 'class' classname=ID ('extends' name=ID)? '{' (varDeclaration)* (methodDeclaration)* '}' #ClassDecl;
 

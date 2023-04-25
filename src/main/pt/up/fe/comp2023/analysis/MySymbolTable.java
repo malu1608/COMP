@@ -15,7 +15,7 @@ public class MySymbolTable implements SymbolTable {
 
     @Override
     public List<String> getImports() {
-        return importList;
+        return this.importList;
     }
 
     @Override
