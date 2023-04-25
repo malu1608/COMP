@@ -2,10 +2,21 @@ import io;
 
 class OllirToJasminInvoke {
 
+
+    public int teste(int a){
+        OllirToJasminInvoke test;
+
+        b = new OllirToJasminInvoke();
+        b.teste(a);
+    }
+
     public static void main(String[] args) {
         OllirToJasminInvoke test;
 
         test = new OllirToJasminInvoke();
+
     }
+
+
 
 }

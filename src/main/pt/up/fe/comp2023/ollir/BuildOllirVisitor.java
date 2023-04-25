@@ -68,14 +68,15 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         tempCounter++;
         return result;
     }
-    private String getParameters(String methodName, String varName){
-
+    private int getParameters(String methodName, String varName){
+        int parameterNumber = 1;
         for (Symbol parameter : table.getParameters(methodName)) {
             if(parameter.getName().equals(varName))
-                return varName;
+                return parameterNumber;
+            parameterNumber++;
 
         }
-        return "";
+        return -1;
     }
 
 
@@ -95,7 +96,6 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         ollirCode += binOpCode;
 
         return result;
-
     }
 
     private String visitAssignment(JmmNode jmmNode, String s) {
@@ -107,10 +107,16 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         if(table.isGlobal(var_name))
             ollirCode += "\t\tputfield(this, " + var_name + idType +  ", " + child +")" + idType +  ".V;\n";
-        /*
-        else if(var_name.equals(getParameters(jmmNode.getJmmParent().get("name"),var_name))){
-            ollirCode += "$.";
-        }*/
+
+
+        int nr ;
+        nr = getParameters(jmmNode.getJmmParent().get("name"),var_name);
+        if (nr != -1){
+            String temp = Integer.toString(nr);
+            //_sb.insert(0,);
+            var_name = "$" + temp + "." + var_name;
+        }
+
 
         var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
         ollirCode += assign;
@@ -147,6 +153,8 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         return "";
     }
+
+
     private String visitRetStat(JmmNode jmmNode, String s) {
 
         if(jmmNode.getJmmChild(0).getKind().equals("BinaryOp")){
@@ -166,10 +174,8 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             else{visit(jmmNode.getJmmChild(0));}
         }
 
-
         return ollirCode;
     }
-
 
 
     private String ProgramVisit(JmmNode jmmNode, String s) {
@@ -191,12 +197,15 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             return ollirCode;
         }
     }
+
+
     private String emptyConstructor() {
         StringBuilder constructorCode = new StringBuilder();
         constructorCode.append("\n\t.construct ").append(table.getClassName()).append("().V {\n")
                 .append("\t\tinvokespecial(this, \"<init>\").V;\n").append("\t}\n\n");
         return constructorCode.toString();
     }
+
     private String visitClassDeclaration(JmmNode jmmNode, String s) {
         String class_name = table.getClassName();
         String super_class = table.getSuper();
@@ -219,12 +228,13 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
                 hasConstructor = true;
 
             }
-
             visit(child);
         }
         ollirCode += "\n}";
         return ollirCode;
     }
+
+
     private String visitMethod(JmmNode jmmNode, String s) {
         StringBuilder mainStr = new StringBuilder();
 
@@ -283,7 +293,8 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         String idType = getOllirType(identifier.get("value"));
         StringBuilder code = new StringBuilder();
 
-        if (identifier.getKind().equals("Identifier") && table.checkVariableInImports(identifier.get("value"))) {
+        if (identifier.getKind().equals("Identifier") && table.checkVariableInImports(identifier.get("value")) ) {
+
             code.append("\t\tinvokestatic("  + identifier.get("value")   + ", \"" + methodCall.get("name") + "\"");
 
             if (methodCall.getChildren().size() > 0)
@@ -302,10 +313,9 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             code.append(").V; \n");
         } else {
 
-            code.append("invokevirtual(" + getOllirType(table.getVariable(identifier.get("value"),method.get("name")).toString())+  table.getVariable(identifier.get("value"),method.get("name"))+ ", \"" + methodCall.get("name") );
+            code.append("invokevirtual(" + getOllirType(identifier.get("value")) + ", \"" + methodCall.get("name") + "\"");
 
         }
-
         ollirCode += code.toString() ;
 
         return ollirCode;
