@@ -314,7 +314,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             code.append(").V; \n");
         } else {
 
-            code.append("invokevirtual(" + getOllirType(identifier.get("value")) + ", \"" + methodCall.get("name") + "\"");
+            code.append("\t\tinvokevirtual(" + identifier.get("value") +  getOllirType(identifier.get("value")) + ", \"" + methodCall.get("name") + "\"" + ", " +visit(methodCall.getJmmChild(1)) + ").V;\n" );
 
         }
         ollirCode += code.toString() ;
