@@ -125,7 +125,7 @@ public class MyJasmin implements JasminBackend {
         } else if (elementType == BOOLEAN) {
             return "Z";
         } else if (elementType == STRING) {
-            return "Ljava/lang/String";
+            return "Ljava/lang/String;";
         } else if (elementType == VOID) {
             return "V";
         }
