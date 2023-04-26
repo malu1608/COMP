@@ -110,26 +110,26 @@ public class MyJasmin implements JasminBackend {
     }
 
     private String getJasminCode(Type fieldType) {
-        //fieldType.show();
-        ElementType elementType = fieldType.getTypeOfElement();
+        if (fieldType instanceof ArrayType) {
+            return "[" + getJasminCode(((ArrayType) fieldType).getElementType());
+        }
+        if (fieldType instanceof ClassType) {
+            return "L" + getQualifiedPath(((ClassType) fieldType).getName()) + ";";
+        }
+        return getJasminCode(fieldType.getTypeOfElement());
+    }
+
+    private String getJasminCode(ElementType elementType) {
         if (elementType == INT32) {
             return "I";
         } else if (elementType == BOOLEAN) {
             return "Z";
-        } else if (elementType == ARRAYREF) {
-            return "[" + getJasminCode(((ArrayType) fieldType).getElementType());
-        } else if (elementType == OBJECTREF) {
-            return "L" + getQualifiedPath(((ClassType) fieldType).getName()) + ";";
-        } else if (elementType == CLASS) {
-            return ("L" + getQualifiedPath(((ClassType) fieldType).getName()) + ";");
-        } else if (elementType == THIS) {
-            return "L" + getQualifiedPath(((ClassType) fieldType).getName()) + ";";
         } else if (elementType == STRING) {
             return "Ljava/lang/String";
         } else if (elementType == VOID) {
             return "V";
         }
-        throw new NotImplementedException(fieldType);
+        throw new NotImplementedException(elementType);
     }
 
     private String getJasminCode(Method method) {
