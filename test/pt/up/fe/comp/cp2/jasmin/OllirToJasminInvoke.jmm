@@ -2,6 +2,7 @@ import io;
 
 class OllirToJasminInvoke {
 
+    int[] a  ;
 
     public int teste(int a){
         OllirToJasminInvoke test;

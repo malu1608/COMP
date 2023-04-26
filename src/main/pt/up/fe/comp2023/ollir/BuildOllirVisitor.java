@@ -54,6 +54,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         return jmmNode.get("value") + parseType("boolean");
     }
 
+
     private String visitIdentifier(JmmNode jmmNode, String methodName) {
         var varName = jmmNode.get("value");
         if(getOllirType(varName).equals(varName)){
@@ -62,6 +63,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         return varName + getOllirType(varName);
     }
+
 
     private String nextTemp()  {
         var result = "temp_" + tempCounter;
@@ -113,7 +115,6 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         nr = getParameters(jmmNode.getJmmParent().get("name"),var_name);
         if (nr != -1){
             String temp = Integer.toString(nr);
-            //_sb.insert(0,);
             var_name = "$" + temp + "." + var_name;
         }
 
@@ -215,7 +216,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         //field da classe
         for(var field: table.getFields()){
-            ollirCode += "\t.field " + field.getName() + parseType(field.getType().getName()) + ";\n";
+            ollirCode += "\t.field " + field.getName() + parseType(field.getType().getName(),field.getType().isArray())  + ";\n";
         }
 
         boolean hasConstructor = false;
@@ -326,18 +327,28 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         return visitStr.toString();
     }
 
+    private String parseType(String type, boolean isArray) {
+        String r = "";
+        if (isArray)  r += ".array" ;
+        if (type.equals("int"))
+            return r + ".i32";
+        else if (type.equals("void"))
+            return r + ".V";
+        else if(type.equals("boolean"))
+            return r + ".bool";
+        else if(type.equals(":="))
+            return r + ".i32";
+
+        return "." + type;
+
+    }
+
     private String parseType(String type) {
 
         if (type.equals("int"))
             return ".i32";
         else if (type.equals("void"))
             return ".V";
-        else if (type.equals("false"))
-            return "0.bool";
-        else if (type.equals("true"))
-            return "1.bool";
-        else if (type.equals("int array"))
-            return ".array.i32";
         else if(type.equals("boolean"))
             return ".bool";
         else if(type.equals(":="))
@@ -349,8 +360,10 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     private String visitNewObject (JmmNode jmmNode, String idType) {
         return "new(" + jmmNode.get("value") + ")" + idType;
     }
+
     public String getCode(){
         return ollirCode;}
+
 
     private String getAssigmentRetType(String op) {
         return switch (op) {
