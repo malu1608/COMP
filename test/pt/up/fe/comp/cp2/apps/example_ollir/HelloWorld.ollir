@@ -8,5 +8,4 @@ invokespecial(this, "<init>").V;
 invokestatic(ioPlus, "printHelloWorld").V;
 ret.V;
 }
-
 }
