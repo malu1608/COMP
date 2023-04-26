@@ -6,7 +6,12 @@ import pt.up.fe.comp.jmm.jasmin.JasminResult;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
 import pt.up.fe.specs.util.exceptions.NotImplementedException;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import static org.specs.comp.ollir.CallType.*;
 import static org.specs.comp.ollir.ElementType.*;
+import static org.specs.comp.ollir.InstructionType.*;
 
 public class MyJasmin implements JasminBackend {
 
@@ -169,6 +174,338 @@ public class MyJasmin implements JasminBackend {
     }
 
     private String getJasminCode(Method method, Instruction instruction) {
-
+        if (instruction instanceof CallInstruction) {
+            CallInstruction callInstr = (CallInstruction) instruction;
+            return getJasminCode(method, callInstr);
+        }
+        if (instruction instanceof ReturnInstruction) {
+            ReturnInstruction retInstr = (ReturnInstruction) instruction;
+            return getJasminCode(method, retInstr);
+        }
+        if (instruction instanceof AssignInstruction) {
+            AssignInstruction assignInstr = (AssignInstruction) instruction;
+            return getJasminCode(method, assignInstr);
+        }
+        if (instruction instanceof GetFieldInstruction) {
+            GetFieldInstruction getFieldInstr = (GetFieldInstruction) instruction;
+            return getJasminCode(method, getFieldInstr);
+        }
+        if (instruction instanceof PutFieldInstruction) {
+            PutFieldInstruction putFieldInstr = (PutFieldInstruction) instruction;
+            return getJasminCode(method, putFieldInstr);
+        }
+        throw new NotImplementedException(instruction.getClass());
     }
+
+    private String getJasminCode(Method method, CallInstruction callInstruction) {
+        if (callInstruction.getInvocationType() == NEW) {
+            return getJasminCodeNew(callInstruction, method);
+        } else if (callInstruction.getInvocationType() == invokestatic) {
+            return getJasminCodeInvokeStatic(callInstruction, method);
+        } else if (callInstruction.getInvocationType() == invokespecial) {
+            return getJasminCodeInvokeSpecial(callInstruction, method);
+        } else if (callInstruction.getInvocationType() == invokevirtual) {
+            return getJasminCodeInvokeVirtual(callInstruction, method);
+        } else {
+            throw new NotImplementedException(callInstruction.getInvocationType());
+        }
+    }
+
+    private String getJasminCodeNew(CallInstruction callInstruction, Method method) {
+        StringBuilder code = new StringBuilder();
+
+        String returnType = ((ClassType) (callInstruction.getReturnType())).getName();
+        code.append("new " + getQualifiedPath(returnType) + "\n" + "dup\n");
+
+        return code.toString();
+    }
+
+    private String getJasminCodeInvokeStatic(CallInstruction callInstruction, Method method) {
+        StringBuilder code = new StringBuilder();
+
+        HashMap<String, Descriptor> map = method.getVarTable();
+        ArrayList<Element> parameters = callInstruction.getListOfOperands();
+
+        for (Element parameter : parameters) {
+            code.append(getLoad(map, parameter));
+        }
+        code.append("invokestatic ");
+
+        String methodClass = ((Operand) callInstruction.getFirstArg()).getName();
+        code.append(getQualifiedPath(methodClass) + "/");
+        code.append( ((LiteralElement) (callInstruction.getSecondArg()) ).getLiteral().replace("\"", ""));
+        code.append("(" + getArgCode(callInstruction.getListOfOperands()) + ")");
+        code.append(getJasminCode(callInstruction.getReturnType()) + "\n");
+
+        return code.toString();
+    }
+
+    private String getLoad(HashMap<String, Descriptor> map, Element element) {
+        ElementType type = element.getType().getTypeOfElement();
+
+        // instructions iconst
+        if (element.isLiteral()) {
+            return iconst(((LiteralElement) element).getLiteral());
+        }
+
+        // instructions iload
+        if (type == ElementType.INT32 || type == ElementType.STRING || type == ElementType.BOOLEAN) {
+            int virtualReg = map.get(((Operand) element).getName()).getVirtualReg();
+            return load_store(virtualReg, "iload");
+        }
+
+        // instructions aload
+        if (type == ElementType.OBJECTREF || type == ElementType.ARRAYREF || type == ElementType.THIS) {
+            int virtualReg = map.get(((Operand) element).getName()).getVirtualReg();
+            return load_store(virtualReg, "aload");
+        }
+        return "";
+    }
+
+    private String iconst(String number) {
+        String instr = "";
+
+        int integer = Integer.parseInt(number);
+
+        if (integer == -1) {
+            instr = "iconst_m1";
+        } else if (integer <= 5 && integer >= 0) {
+            instr = ("iconst_" + number);
+        } else if (integer <= 127 && integer >= -128) {
+            instr = ("bipush " + number);
+        } else if (integer <= 32767 && integer >= -32768) {
+            instr = ("sipush " + number);
+        } else {
+            instr = ("ldc " + number);
+        }
+
+        return (instr + "\n");
+    }
+
+    private String getArgCode(ArrayList<Element> operands) {
+        StringBuilder code = new StringBuilder();
+
+        for (Element arg : operands) {
+            code.append(getJasminCode(arg.getType()));
+        }
+
+        return code.toString();
+    }
+
+    private String getJasminCodeInvokeSpecial(CallInstruction callInstruction, Method method) {
+        StringBuilder code = new StringBuilder();
+
+        HashMap<String, Descriptor> map = method.getVarTable();
+        ArrayList<Element> params = callInstruction.getListOfOperands();
+
+        for (Element param : params) {
+            code.append(getLoad(map, param));
+        }
+
+        code.append(getLoad(map, callInstruction.getFirstArg()));
+
+        String className = getQualifiedPath(((ClassType) callInstruction.getFirstArg().getType()).getName());
+        code.append("invokespecial " + className + "/");
+
+        String methodName = ((LiteralElement) callInstruction.getSecondArg()).getLiteral().replace("\"", "");
+        code.append(methodName.replace("\"", ""));
+        code.append("(" + getArgCode(params) + ")");
+
+        Type returnType = callInstruction.getReturnType();
+        code.append(getJasminCode(returnType) + "\n");
+
+        return code.toString();
+    }
+
+
+    private String getJasminCodeInvokeVirtual(CallInstruction callInstruction, Method method) {
+        StringBuilder code = new StringBuilder();
+
+        HashMap<String, Descriptor> map = method.getVarTable();
+        ArrayList<Element> parameters = callInstruction.getListOfOperands();
+
+        code.append(getLoad(map, callInstruction.getFirstArg()));
+        for (Element parameter : parameters) {
+            code.append(getLoad(map, parameter));
+        }
+
+        String className = getQualifiedPath(((ClassType) callInstruction.getFirstArg().getType()).getName());
+        code.append("invokevirtual ").append(className).append("/");
+
+        String methodName = ((LiteralElement) callInstruction.getSecondArg()).getLiteral().replace("\"", "");
+        code.append(methodName.replace("\"", ""));
+        code.append(getArgCode(parameters));
+
+        Type returnType = callInstruction.getReturnType();
+        code.append(getJasminCode(returnType) + "\n");
+
+        return code.toString();
+    }
+
+    private String getJasminCode(Method method, ReturnInstruction returnInstruction) {
+        if (!returnInstruction.hasReturnValue()) {
+            return "return\n";
+        }
+
+        StringBuilder code = new StringBuilder();
+
+        Element result = returnInstruction.getOperand();
+        code.append(getLoad(method.getVarTable(), result));
+
+        ElementType elementType = result.getType().getTypeOfElement();
+        if(elementType == ElementType.INT32 || elementType == ElementType.BOOLEAN) {
+            code.append("ireturn\n");
+        } else {
+            code.append("areturn\n");
+        }
+
+        return code.toString();
+    }
+
+    private String getJasminCode(Method method, AssignInstruction assignInstruction) {
+        StringBuilder code = new StringBuilder();
+
+        Instruction rhs = assignInstruction.getRhs();
+        Element dest = assignInstruction.getDest();
+
+        String rhsString = getOpCode(method, rhs);
+
+        String val = getStoreCode(dest, rhsString, method.getVarTable());
+        code.append(val);
+
+        return code.toString();
+    }
+
+    private String getOpCode(Method method, Instruction instr) {
+        if (instr.getInstType() == NOPER) {
+            SingleOpInstruction singleOpInstruction = (SingleOpInstruction) instr;
+            return getNoperCode(method.getVarTable(), singleOpInstruction);
+        } else if (instr.getInstType() == UNARYOPER){
+            UnaryOpInstruction unaryOpInstruction = (UnaryOpInstruction) instr;
+            return getUnaryOperCode(method.getVarTable(), unaryOpInstruction);
+        } else if (instr.getInstType() == BINARYOPER){
+            BinaryOpInstruction binaryOpInstruction = (BinaryOpInstruction) instr;
+            return getBinaryOperCode(method.getVarTable(), binaryOpInstruction);
+        } else if (instr.getInstType() == CALL){
+            CallInstruction callInstruction = (CallInstruction) instr;
+            return getJasminCode(method, callInstruction);
+        } else if (instr.getInstType() == GETFIELD){
+            GetFieldInstruction getFieldInstruction = (GetFieldInstruction) instr;
+            return getJasminCode(method, getFieldInstruction);
+        } else {
+            return "\n";
+        }
+    }
+
+    private String getNoperCode(HashMap<String, Descriptor> map, SingleOpInstruction singleOpInstruction) {
+        Element element = singleOpInstruction.getSingleOperand();
+        return getLoad(map, element);
+    }
+
+    private String getUnaryOperCode(HashMap<String, Descriptor> map, UnaryOpInstruction unaryOpInstruction) {
+        StringBuilder code = new StringBuilder();
+
+        Element element = unaryOpInstruction.getOperand();
+        Operation operation = unaryOpInstruction.getOperation();
+
+        if (operation.getOpType() == OperationType.NOTB) {
+            code.append(iconst("1") + getLoad(map, element) + "isub\n");
+        }
+
+        return code.toString();
+    }
+
+    private String getBinaryOperCode(HashMap<String, Descriptor> map, BinaryOpInstruction instruction) {
+        StringBuilder code = new StringBuilder();
+        Element leftOperand = instruction.getLeftOperand();
+        Element rightOperand = instruction.getRightOperand();
+
+        String leftLoad = getLoad(map, leftOperand);
+        String rightLoad = getLoad(map, rightOperand);
+        OperationType type = instruction.getOperation().getOpType();
+
+        code.append(leftLoad);
+        code.append(rightLoad);
+        code.append(getArithmeticCode(type));
+
+        return code.toString();
+    }
+
+    private String getArithmeticCode(OperationType operationType) {
+        switch (operationType) {
+            case ADD:
+                return "iadd\n";
+            case SUB:
+                return "isub\n";
+            case MUL, ANDB:
+                return "imul\n";
+            case DIV:
+                return "idiv\n";
+            case OR:
+                return "ior\n";
+            default:
+                return "";
+        }
+    }
+
+    private String getStoreCode(Element dest, String rhsString, HashMap<String, Descriptor> map) {
+        ElementType type = dest.getType().getTypeOfElement();
+        int register = map.get(((Operand) dest).getName()).getVirtualReg();
+
+        if (type == ElementType.INT32 || type == ElementType.STRING || type == ElementType.BOOLEAN) {
+            return rhsString + load_store(register, "istore");
+        } else if (type == ElementType.OBJECTREF || type == ElementType.THIS || type == ElementType.ARRAYREF) {
+            return rhsString + load_store(register, "astore");
+        }
+        return "";
+    }
+
+    private String load_store(int reg, String instr) {
+        if (reg > 3 || reg < 0) {
+            instr = instr + " ";
+        } else {
+            instr = instr + "_";
+        }
+
+        return (instr + reg + "\n");
+    }
+
+    private String getJasminCode(Method method, GetFieldInstruction getFieldInstruction) {
+        StringBuilder code = new StringBuilder();
+
+        Element firstOperand = getFieldInstruction.getFirstOperand();
+        code.append(getLoad(method.getVarTable(), firstOperand));
+
+        Element secondOperand = getFieldInstruction.getSecondOperand();
+        code.append(getFieldOpCode(firstOperand, secondOperand, "getfield "));
+
+        return code.toString();
+    }
+
+    private String getJasminCode(Method method, PutFieldInstruction putFieldInstruction) {
+        StringBuilder code = new StringBuilder();
+
+        Element firstOperand = putFieldInstruction.getFirstOperand();
+        code.append(getLoad(method.getVarTable(), firstOperand));
+
+        Element thirdOperand = putFieldInstruction.getThirdOperand();
+        code.append(getLoad(method.getVarTable(), thirdOperand));
+
+        Element secondOperand = putFieldInstruction.getSecondOperand();
+        code.append(getFieldOpCode(firstOperand, secondOperand, "putfield "));
+
+        return code.toString();
+    }
+
+    private String getFieldOpCode(Element classElement, Element fieldElement, String fieldOp) {
+        StringBuilder code = new StringBuilder();
+
+        String fieldName = ((Operand)fieldElement).getName();
+        String className = getQualifiedPath(((ClassType)classElement.getType()).getName());
+
+        code.append(fieldOp + className + "/" + fieldName + " " + getJasminCode(fieldElement.getType()) + "\n");
+
+        return code.toString();
+    }
+
 }
