@@ -34,6 +34,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         addVisit("Program",this::ProgramVisit);
         addVisit("ClassDeclaration", this::visitClassDeclaration);
         addVisit("MethodDef", this::visitMethod);
+        addVisit("MethodCall", this::visitObjectMethodCall);
         addVisit("ExpStat", this::visitObjectMethodCall);
         addVisit("Integer",this::visitInteger);
         addVisit("Boolean",this::visitBoolean);
@@ -44,6 +45,13 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         addVisit("BinaryOp", this::visitBinaryOp);
 
         setDefaultVisit(this::setDefault);
+    }
+
+    private String visitExpStat(JmmNode jmmNode, String s) {
+        for (JmmNode child : jmmNode.getChildren()){
+            visit(child);
+        }
+        return ollirCode;
     }
 
     private String visitInteger(JmmNode jmmNode, String methodName) {  //nao uso
@@ -98,36 +106,6 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         ollirCode += binOpCode;
 
         return result;
-    }
-
-    private String visitAssignment(JmmNode jmmNode, String s) {
-
-        String var_name = jmmNode.get("value"); //assignStat
-
-        var idType = getOllirType(var_name);
-        var child = visit(jmmNode.getJmmChild(0),idType);
-
-        if(table.isGlobal(var_name))
-            ollirCode += "\t\tputfield(this, " + var_name + idType +  ", " + child +")" + idType +  ".V;\n";
-
-
-        int nr ;
-        nr = getParameters(jmmNode.getJmmParent().get("name"),var_name);
-        if (nr != -1){
-            String temp = Integer.toString(nr);
-            var_name = "$" + temp + "." + var_name;
-        }
-
-
-        var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
-        ollirCode += assign;
-
-        if(jmmNode.getJmmChild(0).getKind().equals("NewObject")){
-            ollirCode += "\t\t"+"invokespecial(" + var_name+ idType + ", \"<init>\").V;\n";
-        }
-
-        return ollirCode;
-
     }
 
     public String getOllirType(String varName) {
@@ -285,43 +263,106 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         return ollirCode;
     }
 
-    private String visitObjectMethodCall(JmmNode method, String s) {
+    private String visitObjectMethodCall(JmmNode jmmNode, String s) {
         //lida com metodos do import
+        String methodName = null;
 
-        JmmNode methodCall = method.getJmmChild(0);
+        if(jmmNode.getJmmParent().getKind().equals("MethodDef") && jmmNode.getJmmParent().get("name").equals("main") ){
+            methodName = "main";
+        }else{
+            if(jmmNode.getKind().equals("ExpStat")) methodName = jmmNode.getJmmParent().get("name");
+            else if (jmmNode.getKind().equals("MethodCall")) methodName = jmmNode.getJmmParent().getJmmParent().get("name");
+        }
+
+        JmmNode methodCall = jmmNode;
+        if(jmmNode.getJmmChild(0).getKind().equals("MethodCall")){
+            methodCall = jmmNode.getJmmChild(0);
+        }
         JmmNode identifier = methodCall.getJmmChild(0);
-
-        String idType = getOllirType(identifier.get("value"));
         StringBuilder code = new StringBuilder();
+        if(methodCall.getChildren().size() > 1){
+            JmmNode arguments = methodCall.getJmmChild(1);
+            visit(arguments, methodName);
+        }
+        String idType = getOllirType(identifier.get("value"));
 
+        String returnType = ".V";
         if (identifier.getKind().equals("Identifier") && table.checkVariableInImports(identifier.get("value")) ) {
 
-            code.append("\t\tinvokestatic("  + identifier.get("value")   + ", \"" + methodCall.get("name") + "\"");
+            code.append("\t\tinvokestatic("  +  identifier.get("value")   + ", \"" + methodCall.get("name") + "\"");}
+        else {
 
-            if (methodCall.getChildren().size() > 0)
-                code.append(", ");
-            boolean grandchildren = false;
-            for (JmmNode grandchild : methodCall.getChildren()) {
-                grandchildren = true;
-                if(!grandchild.get("value").equals(identifier.get("value")))
-                    code.append(visit(grandchild) + ", ");
-
-            }
-            if (grandchildren)
-                code.delete(code.length() - 2, code.length());
-            //code.append(")." + parseType(table.getMethod(methodCall.get("name")).getReturnType().getName()));
-
-            code.append(").V; \n");
-        } else {
-
-            code.append("\t\tinvokevirtual(" + identifier.get("value") +  getOllirType(identifier.get("value")) + ", \"" + methodCall.get("name") + "\"" + ", " +visit(methodCall.getJmmChild(1)) + ").V;\n" );
+            code.append("invokevirtual(" + identifier.get("value") +  idType + ", \"" + methodCall.get("name") + "\"" );
 
         }
-        ollirCode += code.toString() ;
 
-        return ollirCode;
+        boolean grandchildren = false;
+        for (JmmNode grandchild : methodCall.getChildren()) {
+            grandchildren = true;
+            if(!grandchild.get("value").equals(identifier.get("value")))
+                code.append( " , " + visit(grandchild));
+
+        }
+        /*
+        if (grandchildren)
+            code.delete(code.length() - 1, code.length());*/
+        //code.append(")." + parseType(table.getMethod(methodCall.get("name")).getReturnType().getName()));
+
+        code.append(")");
+        if(!jmmNode.getJmmParent().getKind().equals("AssignStat")){
+            for (String method : table.getMethods()) {
+                if (method.equals(methodCall.get("name"))) {
+                    returnType = parseType(table.getMethod(methodCall.get("name")).getReturnType().getName(), table.getMethod(method).getReturnType().isArray());
+                    code.append(returnType);
+                    break;
+                }
+            }
+
+            code.append(";\n");
+            ollirCode += code.toString();
+            return ollirCode;
+        }
+        else{
+            if(jmmNode.getJmmParent().getKind().equals("AssignStat")){
+                returnType = getOllirType(jmmNode.getJmmParent().get("value"));
+                code.append(returnType);
+            }
+        }
+            //code.append(".").append(returnType.split("\\.")[1]);
+
+            return code.toString();
+
     }
 
+    private String visitAssignment(JmmNode jmmNode, String s) {
+
+        String var_name = jmmNode.get("value"); //assignStat
+
+        var idType = getOllirType(var_name);
+        var child = visit(jmmNode.getJmmChild(0),idType);
+
+        if(table.isGlobal(var_name))
+            ollirCode += "\t\tputfield(this, " + var_name + idType +  ", " + child +")" + idType +  ".V;\n";
+
+
+        int nr ;
+        nr = getParameters(jmmNode.getJmmParent().get("name"),var_name);
+        if (nr != -1){
+            String temp = Integer.toString(nr);
+            var_name = "$" + temp + "." + var_name;
+        }
+
+
+        var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
+        ollirCode += assign;
+
+        if(jmmNode.getJmmChild(0).getKind().equals("NewObject")){
+            ollirCode += "\t\t"+"invokespecial(" + var_name+ idType + ", \"<init>\").V;\n";
+        }
+
+        return ollirCode;
+
+    }
     private String setDefault(JmmNode jmmNode, String s) {
         StringBuilder visitStr = new StringBuilder();
         return visitStr.toString();
