@@ -24,8 +24,10 @@ public class MyJasmin implements JasminBackend {
         this.ollirClassUnit.buildVarTables();
         String jasminCode = getJasminCode();
 
-        //System.out.println("JASMIN CODE:");
-        //System.out.println(jasminCode);
+        if (ollirResult.getConfig().getOrDefault("debug", "false").equals("true")) {
+            System.out.println("JASMIN CODE:");
+            System.out.println(jasminCode);
+        }
 
         return new JasminResult(jasminCode);
     }
