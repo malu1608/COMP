@@ -44,7 +44,7 @@ public class MyJasmin implements JasminBackend {
 
         // Field name
         for (Field field : this.ollirClassUnit.getFields()) {
-            jasminCode.append(".field " + getJasminCode(field) + "\n");
+            jasminCode.append(".field " + getJasminCode(field) + "\n\n");
         }
 
         // Super constructor
@@ -53,6 +53,7 @@ public class MyJasmin implements JasminBackend {
                 "invokespecial " + superClass + "/<init>()V\n" +
                 "return\n" +
                 ".end method\n\n");
+        jasminCode.append("\n\n\n");
 
         // Methods
         for (Method method : this.ollirClassUnit.getMethods()) {
