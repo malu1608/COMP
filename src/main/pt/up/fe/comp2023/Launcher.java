@@ -6,8 +6,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import pt.up.fe.comp.TestUtils;
+import pt.up.fe.comp.jmm.jasmin.JasminResult;
+import pt.up.fe.comp.jmm.ollir.OllirResult;
 import pt.up.fe.comp.jmm.parser.JmmParserResult;
 import pt.up.fe.comp2023.analysis.Analyser;
+import pt.up.fe.comp2023.jmm.jasmin.MyJasmin;
 import pt.up.fe.comp2023.ollir.Optimizer;
 import pt.up.fe.specs.util.SpecsIo;
 import pt.up.fe.specs.util.SpecsLogs;
@@ -49,10 +52,18 @@ public class Launcher {
         var semanticsResult = analyser.semanticAnalysis(parserResult);
         TestUtils.noErrors(semanticsResult);
         System.out.println("Analysis:\n---------\n" + analyser.semanticAnalysis(parserResult).getSymbolTable().print());
+
         //instantiate Optimizer
         var optimizer = new Optimizer();
+        OllirResult ollirResult = optimizer.toOllir(analyser.semanticAnalysis(parserResult));
+        String ollirCode = ollirResult.getOllirCode();
+        System.out.println("Ollir code:\n---------\n" + ollirCode);
 
-        System.out.println("Ollir code:\n---------\n" + optimizer.toOllir(analyser.semanticAnalysis(parserResult)).getOllirCode());
+        //Jasmin
+        MyJasmin myJasmin = new MyJasmin();
+        JasminResult jasminResult = myJasmin.toJasmin(ollirResult);
+        String jasminCode = jasminResult.getJasminCode();
+        System.out.println("Jasmin code:\n---------\n" + jasminCode);
 
         // ... add remaining stages
 
