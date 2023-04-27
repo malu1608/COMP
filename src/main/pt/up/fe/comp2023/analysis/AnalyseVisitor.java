@@ -9,7 +9,7 @@ import pt.up.fe.comp.jmm.report.Report;
 import pt.up.fe.specs.util.SpecsCollections;
 
 import java.util.*;
-public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, Void> {
+public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report>> {
     static final List<String> TYPES = Arrays.asList("int", "boolean", "void");
     static final List<String> ARITHMETIC_OPS = Arrays.asList("ADD", "SUB", "MUL", "DIV");
     static final List<String> COMPARISON_OP = List.of("LT");
