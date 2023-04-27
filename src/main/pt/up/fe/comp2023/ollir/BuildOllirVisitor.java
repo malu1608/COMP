@@ -285,11 +285,13 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             visit(arguments, methodName);
         }
         String idType = getOllirType(identifier.get("value"));
-
+        boolean istatic = false;
         String returnType = ".V";
         if (identifier.getKind().equals("Identifier") && table.checkVariableInImports(identifier.get("value")) ) {
 
-            code.append("\t\tinvokestatic("  +  identifier.get("value")   + ", \"" + methodCall.get("name") + "\"");}
+            code.append("\t\tinvokestatic("  +  identifier.get("value")   + ", \"" + methodCall.get("name") + "\"");
+            istatic = true;
+        }
         else {
 
             code.append("invokevirtual(" + identifier.get("value") +  idType + ", \"" + methodCall.get("name") + "\"" );
@@ -309,16 +311,23 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         //code.append(")." + parseType(table.getMethod(methodCall.get("name")).getReturnType().getName()));
 
         code.append(")");
+        if(istatic) {
+            code.append(".V;\n");
+            ollirCode += code.toString();
+            return ollirCode;
+        }
+        else{
         if(!jmmNode.getJmmParent().getKind().equals("AssignStat")){
             for (String method : table.getMethods()) {
                 if (method.equals(methodCall.get("name"))) {
                     returnType = parseType(table.getMethod(methodCall.get("name")).getReturnType().getName(), table.getMethod(method).getReturnType().isArray());
-                    code.append(returnType);
-                    break;
+                    code.append(returnType).append(";\n");
+                    ollirCode += code.toString();
+                    return ollirCode;
                 }
             }
 
-            code.append(";\n");
+            code.append(returnType).append(";\n");
             ollirCode += code.toString();
             return ollirCode;
         }
@@ -326,9 +335,9 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             if(jmmNode.getJmmParent().getKind().equals("AssignStat")){
                 returnType = getOllirType(jmmNode.getJmmParent().get("value"));
                 code.append(returnType);
+                }
             }
-        }
-            //code.append(".").append(returnType.split("\\.")[1]);
+        }    //code.append(".").append(returnType.split("\\.")[1]);
 
             return code.toString();
 
