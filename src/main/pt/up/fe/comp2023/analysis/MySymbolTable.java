@@ -101,7 +101,6 @@ public class MySymbolTable implements SymbolTable {
     }
 
 
-
     public Symbol getVariable(String variableName, String methodName) {
         Symbol globalVar = this.getField(variableName);
         Symbol localVar = this.getMethod(methodName).getLocalVariable(variableName);
