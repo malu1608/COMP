@@ -24,6 +24,9 @@ public class MyJasmin implements JasminBackend {
         this.ollirClassUnit.buildVarTables();
         String jasminCode = getJasminCode();
 
+        //System.out.println("JASMIN CODE:");
+        //System.out.println(jasminCode);
+
         return new JasminResult(jasminCode);
     }
 
@@ -234,7 +237,7 @@ public class MyJasmin implements JasminBackend {
         String methodClass = ((Operand) callInstruction.getFirstArg()).getName();
         code.append(getQualifiedPath(methodClass) + "/");
         code.append( ((LiteralElement) (callInstruction.getSecondArg()) ).getLiteral().replace("\"", ""));
-        code.append("(" + getArgCode(callInstruction.getListOfOperands()) + ")");
+        code.append("(" + getArgsCode(callInstruction.getListOfOperands()) + ")");
         code.append(getJasminCode(callInstruction.getReturnType()) + "\n");
 
         return code.toString();
@@ -282,7 +285,7 @@ public class MyJasmin implements JasminBackend {
         return (instr + "\n");
     }
 
-    private String getArgCode(ArrayList<Element> operands) {
+    private String getArgsCode(ArrayList<Element> operands) {
         StringBuilder code = new StringBuilder();
 
         for (Element arg : operands) {
@@ -309,7 +312,7 @@ public class MyJasmin implements JasminBackend {
 
         String methodName = ((LiteralElement) callInstruction.getSecondArg()).getLiteral().replace("\"", "");
         code.append(methodName.replace("\"", ""));
-        code.append("(" + getArgCode(params) + ")");
+        code.append("(" + getArgsCode(params) + ")");
 
         Type returnType = callInstruction.getReturnType();
         code.append(getJasminCode(returnType) + "\n");
@@ -334,7 +337,7 @@ public class MyJasmin implements JasminBackend {
 
         String methodName = ((LiteralElement) callInstruction.getSecondArg()).getLiteral().replace("\"", "");
         code.append(methodName.replace("\"", ""));
-        code.append(getArgCode(parameters));
+        code.append("(" + getArgsCode(parameters) + ")");
 
         Type returnType = callInstruction.getReturnType();
         code.append(getJasminCode(returnType) + "\n");
