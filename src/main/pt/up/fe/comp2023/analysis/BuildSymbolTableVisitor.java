@@ -8,8 +8,10 @@ import pt.up.fe.comp.jmm.report.Report;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Report>> {
 
@@ -41,9 +43,22 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
     private List<Report> visitImport(JmmNode jmmNode, MySymbolTable table) {
         List<Report> reports = new ArrayList<>();
         ArrayList<String> importPath = (ArrayList<String>) jmmNode.getObject("path");
-
         String imports = String.join(".",importPath);
-        table.addImport(imports);
+
+        String importPathString = importPath.toString();
+        if (!table.getImports().contains(importPathString)) {
+            String lastName = importPathString.substring(importPathString.lastIndexOf('.') + 1);
+            Optional<String> match = table
+                    .getImports()
+                    .stream()
+                    .filter(s -> s.substring(s.lastIndexOf('.') + 1).equals(lastName))
+                    .findAny();
+            if (match.isPresent()) {
+                reports.add(UtilsReport.alreadyImported(jmmNode, lastName, match.get()));
+                return reports;
+            }
+            table.addImport(imports);
+        }
 
         return reports;
     }
@@ -63,7 +78,11 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
                 boolean isArray = child.getJmmChild(0).get("isArray").equals("true");
                 Type type = new Type(child.getJmmChild(0).get("name"), isArray);
                 Symbol symbol = new Symbol(type, name);
-                table.addField(symbol);
+                if (table.getFields().stream().anyMatch(s -> s.getName().equals(symbol.getName()))) {
+                    reports.add(UtilsReport.symbolAlreadyDefinedReport(child, "variable", symbol.getName(), "class", table.getClassName()));
+                } else {
+                    table.addField(symbol);
+                }
             } else {
                 visitNode(child, table, reports);
             }
@@ -71,8 +90,6 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
 
         return reports;
     }
-
-
 
     private List<Report> visitMethod(JmmNode jmmNode, MySymbolTable table) {
         List<Report> reports = new ArrayList<>();
@@ -82,6 +99,7 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
         Type returnType = new Type(jmmNode.getJmmChild(0).get("name"), isArray);
         List<Symbol> parameters = new ArrayList<>();
         List<Symbol> variables = new ArrayList<>();
+
         for (JmmNode child: jmmNode.getChildren()) {
             System.out.println(child.getKind());
             if (child.getKind().equals("VarDecl")) {
@@ -89,8 +107,11 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
                 isArray = child.getAttributes().contains("isArray") && child.get("isArray").equals("true");
                 Type type = new Type(child.getJmmChild(0).get("name"), isArray);
                 Symbol symbol = new Symbol(type, name);
-                variables.add(symbol);
-
+                if (Stream.concat(variables.stream(), parameters.stream()).anyMatch(s -> s.getName().equals(symbol.getName()))) {
+                    reports.add(UtilsReport.symbolAlreadyDefinedReport(child, "variable", symbol.getName(), "method", methodName));
+                } else {
+                    variables.add(symbol);
+                }
             } else if (child.getKind().equals("Params")) {
                 for (JmmNode grandchild : child.getChildren()) {
                     if (grandchild.getKind().equals("Param")) {
@@ -99,7 +120,11 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
                         isArray = typeChild.getAttributes().contains("isArray") && typeChild.get("isArray").equals("true");
                         Type type = new Type(grandchild.getJmmChild(0).get("name"), isArray);
                         Symbol symbol = new Symbol(type, name);
-                        parameters.add(symbol);
+                        if (parameters.stream().anyMatch(s -> s.getName().equals(symbol.getName()))) {
+                            reports.add(UtilsReport.symbolAlreadyDefinedReport(child , "variable", symbol.getName(), "method", methodName));
+                        } else {
+                            parameters.add(symbol);
+                        }
                     }
                 }
             }
@@ -114,6 +139,14 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
         String methodSignature = methodSignatureBuilder.toString();
 
         table.addMethod(methodName, returnType, parameters, variables);
+
+        if (table.getMethods().contains(methodSignature)) {
+            String symbolName = UtilsAnalyser.getMethodSymbolName(methodSignature);
+            reports.add(UtilsReport.symbolAlreadyDefinedReport(jmmNode, "method", symbolName, "class", table.getClassName()));
+        } else {
+            table.addMethod(methodSignature, returnType, parameters, variables);
+        }
+
         jmmNode.put("signature", methodSignature);
 
         return reports;
