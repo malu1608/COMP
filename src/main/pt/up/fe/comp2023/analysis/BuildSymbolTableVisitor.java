@@ -8,6 +8,7 @@ import pt.up.fe.comp.jmm.report.Report;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Report>> {
@@ -39,17 +40,10 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
 
     private List<Report> visitImport(JmmNode jmmNode, MySymbolTable table) {
         List<Report> reports = new ArrayList<>();
-        var importPath = jmmNode.get("path");
+        ArrayList<String> importPath = (ArrayList<String>) jmmNode.getObject("path");
 
-        var importStream = jmmNode.getChildren().stream()
-                .map(id -> id.get("path"))
-                .collect(Collectors.joining("."));
-
-        if (importStream.equals("")) {
-            table.addImport(importPath);
-        } else {
-            table.addImport(importPath + "." + importStream);
-        }
+        String imports = String.join(".",importPath);
+        table.addImport(imports);
 
         return reports;
     }
@@ -66,7 +60,7 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
         for (JmmNode child: jmmNode.getChildren()) {
             if (child.getKind().equals("VarDecl")) {
                 String name = child.get("name");
-                boolean isArray = child.getAttributes().contains("isArray") && child.get("isArray").equals("true");
+                boolean isArray = child.getJmmChild(0).get("isArray").equals("true");
                 Type type = new Type(child.getJmmChild(0).get("name"), isArray);
                 Symbol symbol = new Symbol(type, name);
                 table.addField(symbol);
@@ -77,6 +71,8 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
 
         return reports;
     }
+
+
 
     private List<Report> visitMethod(JmmNode jmmNode, MySymbolTable table) {
         List<Report> reports = new ArrayList<>();
@@ -91,7 +87,7 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
             if (child.getKind().equals("VarDecl")) {
                 String name = child.get("name");
                 isArray = child.getAttributes().contains("isArray") && child.get("isArray").equals("true");
-                Type type = new Type(child.get("name"), isArray);
+                Type type = new Type(child.getJmmChild(0).get("name"), isArray);
                 Symbol symbol = new Symbol(type, name);
                 variables.add(symbol);
 
@@ -99,7 +95,8 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
                 for (JmmNode grandchild : child.getChildren()) {
                     if (grandchild.getKind().equals("Param")) {
                         String name = grandchild.get("name");
-                        isArray = grandchild.getAttributes().contains("isArray") && grandchild.get("isArray").equals("true");
+                        JmmNode typeChild = grandchild.getJmmChild(0);
+                        isArray = typeChild.getAttributes().contains("isArray") && typeChild.get("isArray").equals("true");
                         Type type = new Type(grandchild.getJmmChild(0).get("name"), isArray);
                         Symbol symbol = new Symbol(type, name);
                         parameters.add(symbol);
@@ -121,4 +118,6 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
 
         return reports;
     }
+
+
 }
