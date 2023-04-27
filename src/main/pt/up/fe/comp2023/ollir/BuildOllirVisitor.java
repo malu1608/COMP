@@ -108,6 +108,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         return result;
     }
 
+
     public String getOllirType(String varName) {
         List<Symbol> var_list = table.getLocalVariables(currentMethod);
         for (Symbol symbol : var_list) {
@@ -235,7 +236,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
                 if (parameter.getType().isArray()) {
                     ollirCode += parameter.getName() + ".array." + parameter.getType().getName();
                 } else {
-                    ollirCode += " " + parameter.getName() + parseType(parameter.getType().getName()) + ",";
+                    ollirCode += " " + parameter.getName() + parseType(parameter.getType().getName(),parameter.getType().isArray()) + ",";
 
                 }
                 //remove ultima virgula
@@ -254,7 +255,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         }
         ollirCode += methodStr.toString() ;
         if (table.getReturnType(jmmNode.get("name")).getName().equals("void")) {
-            ollirCode += "\t\tret" + parseType(table.getReturnType(jmmNode.get("name")).getName()) + ";\n";
+            ollirCode += "\t\tret" + parseType(table.getReturnType(jmmNode.get("name")).getName(),table.getReturnType(jmmNode.get("name")).isArray()) + ";\n";
         }
         ollirCode += "\t\n\t}\n";
 
@@ -305,41 +306,39 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
                 code.append( " , " + visit(grandchild));
 
         }
-        /*
-        if (grandchildren)
-            code.delete(code.length() - 1, code.length());*/
-        //code.append(")." + parseType(table.getMethod(methodCall.get("name")).getReturnType().getName()));
 
         code.append(")");
+
         if(istatic) {
             code.append(".V;\n");
             ollirCode += code.toString();
             return ollirCode;
         }
-        else{
-        if(!jmmNode.getJmmParent().getKind().equals("AssignStat")){
-            for (String method : table.getMethods()) {
-                if (method.equals(methodCall.get("name"))) {
-                    returnType = parseType(table.getMethod(methodCall.get("name")).getReturnType().getName(), table.getMethod(method).getReturnType().isArray());
-                    code.append(returnType).append(";\n");
-                    ollirCode += code.toString();
-                    return ollirCode;
-                }
-            }
 
-            code.append(returnType).append(";\n");
-            ollirCode += code.toString();
-            return ollirCode;
-        }
         else{
-            if(jmmNode.getJmmParent().getKind().equals("AssignStat")){
-                returnType = getOllirType(jmmNode.getJmmParent().get("value"));
-                code.append(returnType);
+            if(!jmmNode.getJmmParent().getKind().equals("AssignStat")){
+                for (String method : table.getMethods()) {
+                    if (method.equals(methodCall.get("name"))) {
+                        returnType = parseType(table.getMethod(methodCall.get("name")).getReturnType().getName(), table.getMethod(method).getReturnType().isArray());
+                        code.append(returnType).append(";\n");
+                        ollirCode += code.toString();
+                        return ollirCode;
+                    }
                 }
+
+                code.append(returnType).append(";\n");
+                ollirCode += code.toString();
+                return ollirCode;
             }
+            else{
+                if(jmmNode.getJmmParent().getKind().equals("AssignStat")){
+                    returnType = getOllirType(jmmNode.getJmmParent().get("value"));
+                    code.append(returnType);
+                    }
+                }
         }    //code.append(".").append(returnType.split("\\.")[1]);
 
-            return code.toString();
+        return code.toString();
 
     }
 
@@ -353,14 +352,12 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         if(table.isGlobal(var_name))
             ollirCode += "\t\tputfield(this, " + var_name + idType +  ", " + child +")" + idType +  ".V;\n";
 
-
         int nr ;
         nr = getParameters(jmmNode.getJmmParent().get("name"),var_name);
         if (nr != -1){
             String temp = Integer.toString(nr);
             var_name = "$" + temp + "." + var_name;
         }
-
 
         var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
         ollirCode += assign;
@@ -390,7 +387,6 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             return r + ".i32";
 
         return "." + type;
-
     }
 
     private String parseType(String type) {
