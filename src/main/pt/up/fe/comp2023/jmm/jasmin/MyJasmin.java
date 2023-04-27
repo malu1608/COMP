@@ -169,6 +169,14 @@ public class MyJasmin implements JasminBackend {
         for (Instruction instruction : method.getInstructions()) {
             String jasminMethodInstr = getJasminCode(method, instruction);
             code.append(jasminMethodInstr);
+
+            if (instruction.getInstType() == InstructionType.CALL) {
+                ElementType returnType = ((CallInstruction) instruction).getReturnType().getTypeOfElement();
+                if (returnType != ElementType.VOID) {
+                    code.append("pop\n");
+                }
+            }
+
         }
 
         code.append(".end method\n");
