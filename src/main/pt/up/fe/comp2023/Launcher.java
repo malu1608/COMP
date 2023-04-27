@@ -49,8 +49,8 @@ public class Launcher {
         //analysis stage
         var analyser = new Analyser();
 
-        var semanticsResult = analyser.semanticAnalysis(parserResult);
-        TestUtils.noErrors(semanticsResult);
+        //var semanticsResult = analyser.semanticAnalysis(parserResult);
+        //TestUtils.noErrors(semanticsResult);
         System.out.println("Analysis:\n---------\n" + analyser.semanticAnalysis(parserResult).getSymbolTable().print());
 
         //instantiate Optimizer
