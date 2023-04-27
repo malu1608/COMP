@@ -62,6 +62,7 @@ expression
     | 'new' value=ID '(' ')' #NewObject
     | value=INTEGER #Integer
     | value=('false' | 'true') #Boolean
+    | 'this' #This
     | value= ID #Identifier;
 
 

@@ -40,7 +40,6 @@ public class Launcher {
         SimpleParser parser = new SimpleParser();
 
         // Parse stage
-        code = SpecsIo.read("test/pt/up/fe/comp/cp2/jasmin/OllirToJasminInvoke.jmm");
         JmmParserResult parserResult = parser.parse(code, config);
         System.out.println(parserResult.getRootNode().toTree());
         // Check if there are parsing errors
