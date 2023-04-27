@@ -227,7 +227,7 @@ public class MyJasmin implements JasminBackend {
         ArrayList<Element> parameters = callInstruction.getListOfOperands();
 
         for (Element parameter : parameters) {
-            code.append(getLoad(map, parameter));
+            code.append(getLoadCode(map, parameter));
         }
         code.append("invokestatic ");
 
@@ -240,7 +240,7 @@ public class MyJasmin implements JasminBackend {
         return code.toString();
     }
 
-    private String getLoad(HashMap<String, Descriptor> map, Element element) {
+    private String getLoadCode(HashMap<String, Descriptor> map, Element element) {
         ElementType type = element.getType().getTypeOfElement();
 
         // instructions iconst
@@ -299,10 +299,10 @@ public class MyJasmin implements JasminBackend {
         ArrayList<Element> params = callInstruction.getListOfOperands();
 
         for (Element param : params) {
-            code.append(getLoad(map, param));
+            code.append(getLoadCode(map, param));
         }
 
-        code.append(getLoad(map, callInstruction.getFirstArg()));
+        code.append(getLoadCode(map, callInstruction.getFirstArg()));
 
         String className = getQualifiedPath(((ClassType) callInstruction.getFirstArg().getType()).getName());
         code.append("invokespecial " + className + "/");
@@ -324,9 +324,9 @@ public class MyJasmin implements JasminBackend {
         HashMap<String, Descriptor> map = method.getVarTable();
         ArrayList<Element> parameters = callInstruction.getListOfOperands();
 
-        code.append(getLoad(map, callInstruction.getFirstArg()));
+        code.append(getLoadCode(map, callInstruction.getFirstArg()));
         for (Element parameter : parameters) {
-            code.append(getLoad(map, parameter));
+            code.append(getLoadCode(map, parameter));
         }
 
         String className = getQualifiedPath(((ClassType) callInstruction.getFirstArg().getType()).getName());
@@ -350,7 +350,7 @@ public class MyJasmin implements JasminBackend {
         StringBuilder code = new StringBuilder();
 
         Element result = returnInstruction.getOperand();
-        code.append(getLoad(method.getVarTable(), result));
+        code.append(getLoadCode(method.getVarTable(), result));
 
         ElementType elementType = result.getType().getTypeOfElement();
         if(elementType == ElementType.INT32 || elementType == ElementType.BOOLEAN) {
@@ -399,7 +399,7 @@ public class MyJasmin implements JasminBackend {
 
     private String getNoperCode(HashMap<String, Descriptor> map, SingleOpInstruction singleOpInstruction) {
         Element element = singleOpInstruction.getSingleOperand();
-        return getLoad(map, element);
+        return getLoadCode(map, element);
     }
 
     private String getUnaryOperCode(HashMap<String, Descriptor> map, UnaryOpInstruction unaryOpInstruction) {
@@ -409,7 +409,7 @@ public class MyJasmin implements JasminBackend {
         Operation operation = unaryOpInstruction.getOperation();
 
         if (operation.getOpType() == OperationType.NOTB) {
-            code.append(iconst("1") + getLoad(map, element) + "isub\n");
+            code.append(iconst("1") + getLoadCode(map, element) + "isub\n");
         }
 
         return code.toString();
@@ -420,8 +420,8 @@ public class MyJasmin implements JasminBackend {
         Element leftOperand = instruction.getLeftOperand();
         Element rightOperand = instruction.getRightOperand();
 
-        String leftLoad = getLoad(map, leftOperand);
-        String rightLoad = getLoad(map, rightOperand);
+        String leftLoad = getLoadCode(map, leftOperand);
+        String rightLoad = getLoadCode(map, rightOperand);
         OperationType type = instruction.getOperation().getOpType();
 
         code.append(leftLoad);
@@ -453,9 +453,9 @@ public class MyJasmin implements JasminBackend {
         int register = map.get(((Operand) dest).getName()).getVirtualReg();
 
         if (type == ElementType.INT32 || type == ElementType.STRING || type == ElementType.BOOLEAN) {
-            return rhsString + load_store(register, "istore");
+            return (rhsString + load_store(register, "istore"));
         } else if (type == ElementType.OBJECTREF || type == ElementType.THIS || type == ElementType.ARRAYREF) {
-            return rhsString + load_store(register, "astore");
+            return (rhsString + load_store(register, "astore"));
         }
         return "";
     }
@@ -474,7 +474,7 @@ public class MyJasmin implements JasminBackend {
         StringBuilder code = new StringBuilder();
 
         Element firstOperand = getFieldInstruction.getFirstOperand();
-        code.append(getLoad(method.getVarTable(), firstOperand));
+        code.append(getLoadCode(method.getVarTable(), firstOperand));
 
         Element secondOperand = getFieldInstruction.getSecondOperand();
         code.append(getFieldOpCode(firstOperand, secondOperand, "getfield "));
@@ -486,10 +486,10 @@ public class MyJasmin implements JasminBackend {
         StringBuilder code = new StringBuilder();
 
         Element firstOperand = putFieldInstruction.getFirstOperand();
-        code.append(getLoad(method.getVarTable(), firstOperand));
+        code.append(getLoadCode(method.getVarTable(), firstOperand));
 
         Element thirdOperand = putFieldInstruction.getThirdOperand();
-        code.append(getLoad(method.getVarTable(), thirdOperand));
+        code.append(getLoadCode(method.getVarTable(), thirdOperand));
 
         Element secondOperand = putFieldInstruction.getSecondOperand();
         code.append(getFieldOpCode(firstOperand, secondOperand, "putfield "));
