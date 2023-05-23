@@ -138,8 +138,6 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
         }
         String methodSignature = methodSignatureBuilder.toString();
 
-        table.addMethod(methodName, returnType, parameters, variables);
-
         if (table.getMethods().contains(methodSignature)) {
             String symbolName = UtilsAnalyser.getMethodSymbolName(methodSignature);
             reports.add(UtilsReport.symbolAlreadyDefinedReport(jmmNode, "method", symbolName, "class", table.getClassName()));
