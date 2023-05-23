@@ -38,6 +38,12 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
         addVisit("IfThenElseStatement", this::visitCondition);
         addVisit("Identifier", this::visitIdentifier);
 
+        addVisit("IntType", this::visitType);
+        addVisit("StringType", this::visitType);
+        addVisit("BooleanType", this::visitType);
+        addVisit("IDType", this::visitType);
+
+
         setDefaultValue(Collections::emptyList);
         setReduceSimple(this::reduceReports);
     }
@@ -153,13 +159,20 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
             putUnknownType(jmmNode);
             return reports;
         }
-
         Type operand = UtilsAnalyser.getType(child0);
-        if (TYPES.contains(operand.getName()) || operand.isArray() || !symbolTable.getClassName().equals(operand.getName())) {
+
+        if (TYPES.contains(operand.getName())) {
             putUnknownType(jmmNode);
             reports.add(UtilsReport.cannotBeDereferencedReport(jmmNode, operand.getName()));
             return reports;
         }
+
+        if (operand.getName().equals("#UNKNOWN") || operand.isArray() || !symbolTable.getClassName().equals(operand.getName())) {
+            putUnknownType(jmmNode);
+            return reports;
+        }
+
+
 
         String methodSignature = inferMethodSignature(jmmNode);
         Optional<String> foundMethodSignature = symbolTable.getMethods().contains(methodSignature)
@@ -174,7 +187,7 @@ public class AnalyseVisitor extends PostorderJmmVisitor<SymbolTable, List<Report
             Type returnType = symbolTable.getReturnType(foundMethodSignature.get());
             putType(jmmNode, returnType);
         } else {
-            boolean incompleteSignature = methodSignature.contains("##UNKNOWN");
+            boolean incompleteSignature = methodSignature.contains("#UNKNOWN");
             boolean methodLooselyExists = incompleteSignature && symbolTable.getMethods().stream()
                     .anyMatch(m -> m.split("#")[0].equals(jmmNode.get("methodname")));
             if (!methodLooselyExists && symbolTable.getSuper() == null) {

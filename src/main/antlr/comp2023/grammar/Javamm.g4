@@ -29,10 +29,10 @@ parameters : (parameter (',' parameter)*)? #Params;
 methodDeclaration : ('public')? ('static')? type name=ID '(' parameters ')' '{' (varDeclaration | statement )* (statement)? '}' #MethodDef;
 
 type locals[boolean isArray=false]
-    : name='int' ('[' ']' {$isArray=true;})?
-    | name='String'('[' ']' {$isArray=true;})?
-    | name='boolean'
-    | name=ID
+    : name='int' ('[' ']' {$isArray=true;})? #IntType
+    | name='String'('[' ']' {$isArray=true;})? #StringType
+    | name='boolean' #BooleanType
+    | name=ID #IDType
     ;
 
 statement : '{' (statement)* '}' #Stat
@@ -49,7 +49,7 @@ statement : '{' (statement)* '}' #Stat
 
 
 expression
-    : '!' expression #Not
+    : '!' expression #NotExpression
     |'(' expression ')' #UnaryOp
     | expression '[' expression ']' #ArrayAccess
     | expression '.'  'length' #Length
