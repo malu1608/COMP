@@ -43,8 +43,13 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         addVisit("AssignStat", this::visitAssignment);
         addVisit("NewObject", this::visitNewObject);
         addVisit("BinaryOp", this::visitBinaryOp);
+        addVisit("IfElseStat", this::visitIfElse);
 
         setDefaultVisit(this::setDefault);
+    }
+
+    private String visitIfElse(JmmNode jmmNode, String s) {
+        return ollirCode;
     }
 
     private String visitExpStat(JmmNode jmmNode, String s) {
