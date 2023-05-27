@@ -42,22 +42,22 @@ public class UtilsAnalyser {
                         return new Type("#UNKNOWN", false);
                     return varSymbol.getType();
                 }
-                Symbol varSymbol = symbolTable.findFieldMethod(varName, jmmNode.getAncestor("MethodDef").get().get("name"));
+                Symbol varSymbol = symbolTable.findMethod(varName, jmmNode.getAncestor("MethodDef").get().get("name"));
                 if (varSymbol.getType().getName().equals("#UNKNOWN"))
                     return new Type("#UNKNOWN", false);
                 return varSymbol.getType();
             }
 
             case "IDType" -> {
-                String varName = jmmNode.get("name");
+                String varName = jmmNode.getJmmParent().get("name");
                 if (jmmNode.getAncestor("MethodDef").isEmpty()) {
                     Symbol varSymbol = symbolTable.findField(varName);
                     if (varSymbol.getType().getName().equals("#UNKNOWN"))
                         return new Type("#UNKNOWN", false);
                     return varSymbol.getType();
                 }
-                Symbol varSymbol = symbolTable.findFieldMethod(varName, jmmNode.getAncestor("MethodDef").get().get("name"));
                 if (varSymbol.getType().getName().equals("#UNKNOWN"))
+                Symbol varSymbol = symbolTable.findMethod(varName, jmmNode.getAncestor("MethodDef").get().get("name"));
                     return new Type("#UNKNOWN", false);
                 return varSymbol.getType();
             }

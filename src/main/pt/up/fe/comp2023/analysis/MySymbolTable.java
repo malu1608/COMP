@@ -149,12 +149,12 @@ public class MySymbolTable implements SymbolTable {
         return new Symbol(new Type("#UNKNOWN", false), name);
     }
 
-    public Symbol findFieldMethod(String name, String methodName) {
+    public Symbol findMethod(String name, String methodName) {
         for (String nameMethod : methodsList.keySet()) {
             String aux = nameMethod.split("#")[0];
-            if (aux.equals(methodName)) {
+            if (aux.equals(methodName) || name == methodName) {
                 for (Symbol localVariable : methodsList.get(nameMethod).getLocalVariables()) {
-                    if (localVariable.getName().equals(name)) {
+                    if (localVariable.getName().equals(name) || name == methodName) {
                         return localVariable;
                     }
                 }
