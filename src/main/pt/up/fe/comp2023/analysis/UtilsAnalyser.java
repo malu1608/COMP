@@ -35,7 +35,7 @@ public class UtilsAnalyser {
             }
 
             case "Identifier" -> {
-                String varName = jmmNode.get("value");
+                String varName = jmmNode.getJmmParent().get("value");
                 if (jmmNode.getAncestor("MethodDef").isEmpty()) {
                     Symbol varSymbol = symbolTable.findField(varName);
                     if (varSymbol.getType().getName().equals("#UNKNOWN"))
