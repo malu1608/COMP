@@ -56,7 +56,7 @@ public class UtilsReport {
                 operator +
                 "' cannot be applied to '" +
                 left +
-                "and" +
+                "' and '" +
                 right +
                 "'";
         return baseReport(at, ReportType.ERROR, Stage.SEMANTIC, message);

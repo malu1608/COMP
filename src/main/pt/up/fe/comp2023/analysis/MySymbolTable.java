@@ -41,7 +41,7 @@ public class MySymbolTable implements SymbolTable {
     private Method getMethodInternal(String s) {
         var method = methodsList.get(s);
 
-        if(method == null) {
+        if (method == null) {
             method = new Method(null, Collections.emptyList(), Collections.emptyList());
         }
 
@@ -60,7 +60,7 @@ public class MySymbolTable implements SymbolTable {
 
     @Override
     public List<Symbol> getLocalVariables(String s) {
-        
+
         return getMethodInternal(s).getLocalVariables();
     }
 
@@ -90,12 +90,14 @@ public class MySymbolTable implements SymbolTable {
         }
         return false;
     }
+
     public Symbol getField(String fieldName) {
-        for (Symbol symbol: getFields()) {
+        for (Symbol symbol : getFields()) {
             if (symbol.getName().equals(fieldName)) return symbol;
         }
         return null;
     }
+
     public Method getMethod(String methodName) {
         return this.methodsList.get(methodName);
     }
@@ -106,9 +108,77 @@ public class MySymbolTable implements SymbolTable {
         Symbol localVar = this.getMethod(methodName).getLocalVariable(variableName);
         return localVar != null ? localVar : globalVar;
     }
+
     public boolean isGlobal(String variableName) {
         return this.getField(variableName) != null;
     }
 
+    public Symbol findField(String name) {
 
+        // iterate method local variables
+        for (String method : methodsList.keySet()) {
+            for (Symbol localVariable : methodsList.get(method).getLocalVariables()) {
+                if (localVariable.getName().equals(name)) {
+                    return localVariable;
+                }
+            }
+        }
+
+        // iterate method parameters
+        for (String method : methodsList.keySet()) {
+            for (Symbol parameter : methodsList.get(method).getParameters()) {
+                if (parameter.getName().equals(name)) {
+                    return parameter;
+                }
+            }
+        }
+
+        for (Symbol field : fieldsList) {
+            if (field.getName().equals(name)) {
+                return field;
+            }
+        }
+
+        // check if it is in imports
+        for (String imp : importList) {
+            if (imp.endsWith(name)) {
+                return new Symbol(new Type(name, false), name);
+            }
+        }
+
+        return new Symbol(new Type("#UNKNOWN", false), name);
+    }
+
+    public Symbol findFieldMethod(String name, String methodName) {
+        for (String nameMethod : methodsList.keySet()) {
+            String aux = nameMethod.split("#")[0];
+            if (aux.equals(methodName)) {
+                for (Symbol localVariable : methodsList.get(nameMethod).getLocalVariables()) {
+                    if (localVariable.getName().equals(name)) {
+                        return localVariable;
+                    }
+                }
+                for (Symbol parameter : methodsList.get(nameMethod).getParameters()) {
+                    if (parameter.getName().equals(name)) {
+                        return parameter;
+                    }
+                }
+            }
+        }
+
+        for (Symbol field : fieldsList) {
+            if (field.getName().equals(name)) {
+                return field;
+            }
+        }
+
+        // check if it is in imports
+        for (String imp : importList) {
+            if (imp.endsWith(name)) {
+                return new Symbol(new Type(name, false), name);
+            }
+        }
+
+        return new Symbol(new Type("#UNKNOWN", false), name);
+    }
 }
