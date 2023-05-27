@@ -56,8 +56,8 @@ public class UtilsAnalyser {
                         return new Type("#UNKNOWN", false);
                     return varSymbol.getType();
                 }
-                if (varSymbol.getType().getName().equals("#UNKNOWN"))
                 Symbol varSymbol = symbolTable.findMethod(varName, jmmNode.getAncestor("MethodDef").get().get("name"));
+                if (varSymbol.getType().getName().equals("#UNKNOWN"))
                     return new Type("#UNKNOWN", false);
                 return varSymbol.getType();
             }
