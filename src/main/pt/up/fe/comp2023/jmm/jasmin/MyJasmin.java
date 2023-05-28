@@ -476,6 +476,7 @@ public class MyJasmin implements JasminBackend {
         StringBuilder jasminCode = new StringBuilder();
 
         Element firstOperand = getFieldInstruction.getFirstOperand();
+        jasminCode.append(getLoadCode(method.getVarTable(), firstOperand));
 
         Element secondOperand = getFieldInstruction.getSecondOperand();
         jasminCode.append(getFieldOpCode(firstOperand, secondOperand, "getfield "));
