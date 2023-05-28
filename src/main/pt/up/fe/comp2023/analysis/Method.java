@@ -3,18 +3,21 @@ package pt.up.fe.comp2023.analysis;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 
+import java.lang.invoke.StringConcatFactory;
 import java.util.List;
 
 public class Method {
 
-    private Type returnType;
+    private Type returnType ;
     private List<Symbol> parameters;
     private List<Symbol> variables;
+
 
     public Method(Type returnType, List<Symbol> parameters, List<Symbol> variables) {
         this.returnType = returnType;
         this.parameters = parameters;
         this.variables = variables;
+
     }
 
     public Type getReturnType() {
@@ -22,6 +25,7 @@ public class Method {
     }
 
     public List<Symbol> getParameters() {
+        System.out.println("params " + parameters);
         return parameters;
     }
 

@@ -44,9 +44,6 @@ statement : '{' (statement)* '}' #Stat
     | 'return' expression ';' #ReturnStmt
     ;
 
-//returnStmt:
-
-
 
 expression
     : '!' expression #NotExpression

@@ -228,7 +228,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     private String visitMethod(JmmNode jmmNode, String s) {
         StringBuilder mainStr = new StringBuilder();
 
-        currentMethod = jmmNode.get("name");
+        currentMethod = jmmNode.get("signature");
         tempCounter = 0;
 
         ollirCode += "\t.method public ";
@@ -239,7 +239,10 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         ollirCode += mainStr.toString();
 
-        List<Symbol> parameters = table.getParameters(jmmNode.get("name"));
+        //for( Symbol p : table.getParameters(currentMethod)) System.out.println(p);
+        //System.out.println(table.print());
+        List<Symbol> parameters = table.getParameters(jmmNode.get("signature"));
+
         if (!parameters.isEmpty()) {
             for (Symbol parameter : parameters) {
 
@@ -264,8 +267,10 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             visit(child);
         }
         ollirCode += methodStr.toString() ;
-        if (getOllirType(jmmNode.get("name").toString()).equals("void")) {
-            ollirCode += "\t\tret" + parseType(table.getReturnType(jmmNode.get("name")).getName(),table.getReturnType(jmmNode.get("name")).isArray()) + ";\n";
+
+        if (table.getReturnType(jmmNode.get("signature")).getName().equals("void")) {
+            ollirCode += "\t\tret" + parseType(table.getReturnType(jmmNode.get("signature")).getName(),table.getReturnType(jmmNode.get("signature")).isArray()) + ";\n";
+
         }
         ollirCode += "\t\n\t}\n";
 
@@ -364,7 +369,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             ollirCode += "\t\tputfield(this, " + var_name + idType +  ", " + child +")" +  ".V;\n";
 
         int nr ;
-        nr = getParameters(jmmNode.getJmmParent().get("name"),var_name);
+        nr = getParameters(jmmNode.getJmmParent().get("signature"),var_name);
         if (nr != -1){
             String temp = Integer.toString(nr);
             var_name = "$" + temp + "." + var_name;

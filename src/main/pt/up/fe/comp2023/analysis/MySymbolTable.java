@@ -35,41 +35,52 @@ public class MySymbolTable implements SymbolTable {
 
     @Override
     public List<String> getMethods() {
-        return new ArrayList<>(methodsList.keySet());
+        List<String> methodNames = new ArrayList<>();
+        System.out.println(methodNames);
+        methodNames.addAll(methodsList.keySet());
+
+        return methodNames;
+
     }
 
     private Method getMethodInternal(String s) {
-        var method = methodsList.get(s);
-
-        if(method == null) {
+        return this.methodsList.get(s);
+        /*
+        if (method == null) {
             method = new Method(null, Collections.emptyList(), Collections.emptyList());
-        }
-
-        return method;
+            System.out.println("bye"+method);
+        }*/
     }
+
 
     @Override
     public Type getReturnType(String s) {
-        return getMethodInternal(s).getReturnType();
+        return methodsList.get(s).getReturnType();
     }
 
     @Override
     public List<Symbol> getParameters(String s) {
-        return getMethodInternal(s).getParameters();
+        //System.out.println("mname + " + s);
+        //for(String k : methodsList.keySet()) System.out.println(k);
+        //System.out.println(methodsList.keySet());
+        //System.out.println(s + methodsList.get(s));
+        return methodsList.get(s).getParameters();
     }
 
     @Override
-    public List<Symbol> getLocalVariables(String s) {
-        
-        return getMethodInternal(s).getLocalVariables();
+    public List<Symbol> getLocalVariables(String methodname) {
+
+        return methodsList.get(methodname).getLocalVariables();
     }
 
     public void addImport(String _import) {
         importList.add(_import);
     }
 
+
     public void addMethod(String s, Type returnType, List<Symbol> parameters, List<Symbol> variables) {
-        methodsList.put(s, new Method(returnType, parameters, variables));
+        System.out.println("signature " + s);
+        methodsList.put( s, new Method(returnType, parameters, variables));
     }
 
     public void addField(Symbol _field) {
@@ -90,12 +101,14 @@ public class MySymbolTable implements SymbolTable {
         }
         return false;
     }
+
     public Symbol getField(String fieldName) {
-        for (Symbol symbol: getFields()) {
+        for (Symbol symbol : getFields()) {
             if (symbol.getName().equals(fieldName)) return symbol;
         }
         return null;
     }
+
     public Method getMethod(String methodName) {
         return this.methodsList.get(methodName);
     }
@@ -106,9 +119,86 @@ public class MySymbolTable implements SymbolTable {
         Symbol localVar = this.getMethod(methodName).getLocalVariable(variableName);
         return localVar != null ? localVar : globalVar;
     }
+
     public boolean isGlobal(String variableName) {
         return this.getField(variableName) != null;
     }
 
+    public Symbol findField(String name) {
 
+        // iterate method local variables
+        for (String method : methodsList.keySet()) {
+            for (Symbol localVariable : methodsList.get(method).getLocalVariables()) {
+                if (localVariable.getName().equals(name)) {
+                    return localVariable;
+                }
+            }
+        }
+
+        // iterate method parameters
+        for (String method : methodsList.keySet()) {
+            for (Symbol parameter : methodsList.get(method).getParameters()) {
+                if (parameter.getName().equals(name)) {
+                    return parameter;
+                }
+            }
+        }
+
+        for (Symbol field : fieldsList) {
+            if (field.getName().equals(name)) {
+                return field;
+            }
+        }
+
+        // check if it is in imports
+        for (String imp : importList) {
+            if (imp.endsWith(name)) {
+                return new Symbol(new Type(name, false), name);
+            }
+        }
+
+        return new Symbol(new Type("#UNKNOWN", false), name);
+    }
+
+    public Symbol findMethod(String name, String methodName) {
+        for (String nameMethod : methodsList.keySet()) {
+            String aux = nameMethod.split("#")[0];
+            if (aux.equals(methodName) || name == methodName) {
+                for (Symbol localVariable : methodsList.get(nameMethod).getLocalVariables()) {
+                    if (localVariable.getName().equals(name) || name == methodName) {
+                        return localVariable;
+                    }
+                }
+                for (Symbol parameter : methodsList.get(nameMethod).getParameters()) {
+                    if (parameter.getName().equals(name)) {
+                        return parameter;
+                    }
+                }
+            }
+        }
+
+        for (Symbol field : fieldsList) {
+            if (field.getName().equals(name)) {
+                return field;
+            }
+        }
+
+        // check if it is in imports
+        for (String imp : importList) {
+            if (imp.endsWith(name)) {
+                return new Symbol(new Type(name, false), name);
+            }
+        }
+
+        return new Symbol(new Type("#UNKNOWN", false), name);
+    }
+
+    public boolean isClassImported(String className) {
+        for (String imp : importList) {
+            if (imp.endsWith(className)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
