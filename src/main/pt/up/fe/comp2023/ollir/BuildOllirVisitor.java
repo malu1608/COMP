@@ -72,12 +72,12 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     private String visitIdentifier(JmmNode jmmNode, String methodName) {
         var varName = jmmNode.get("value");
         if(table.isGlobal(varName)){
-            var varType = parseType(varName, jmmNode.get("value").isEmpty());
+            var varType = getOllirType(varName);
             var value = nextTemp();
             String p_code = "";
-            p_code += value.substring(0, value.length() - 4) + varType + " :=" + varType + "getfield(this, " +  varName + methodName +")" + methodName + ";\n";
+            p_code += value + varType + " :=" + varType + " getfield(this, " +  varName + methodName +")" + methodName + ";\n";
             ollirCode += p_code;
-            return varName + varType;
+            return value+varType;
             //val = value.substring(0, value.length() - 4) + varType;
         }
 
@@ -365,8 +365,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         var child = visit(jmmNode.getJmmChild(0),idType);
 
-        if(table.isGlobal(var_name))
-            ollirCode += "\t\tputfield(this, " + var_name + idType +  ", " + child +")" +  ".V;\n";
+
 
         int nr ;
         nr = getParameters(jmmNode.getJmmParent().get("signature"),var_name);
@@ -381,14 +380,13 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
 
 
-        if(jmmNode.getJmmChild(0).getKind().equals("NewObject") || jmmNode.getJmmChild(0).getKind().equals("Identifier") ){
-            var var_assigned =  visit(jmmNode.getJmmParent().getJmmChild(jmmNode.getIndexOfSelf()+1).getJmmChild(0));
-            var result = nextTemp()  + idType;
 
-            var putf_code = result + idType+  " :=" + idType + " " + child + var_assigned +";\n";
-            ollirCode += putf_code;
+        if(table.isGlobal(var_name)){
 
-            return result;
+            ollirCode += "\t\tputfield(this, " + var_name + idType +  ", " + child +")" +  ".V;\n";
+            //var var_assigned =  visit(jmmNode.getJmmParent().getJmmChild(jmmNode.getIndexOfSelf()+1).getJmmChild(0));
+
+            return ollirCode;
             //ollirCode += "\t\t"+"invokespecial(" + result+ idType + ", \"<init>\").V;\n";
         }
         ollirCode += assign;
