@@ -8,7 +8,6 @@ import pt.up.fe.comp2023.analysis.MySymbolTable;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 //TODO
 /*
@@ -23,6 +22,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     private int tempCounter = 0;
 
     private String currentMethod = null;
+    private int if_elseCounter = 0;
 
     public BuildOllirVisitor(MySymbolTable new_table) {
         this.table = new_table;
@@ -49,7 +49,27 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     }
 
     private String visitIfElse(JmmNode jmmNode, String s) {
-        return "";
+
+        var boolCond = visit(jmmNode.getJmmChild(0));
+
+        int nextIf = nextIfElse();
+
+        ollirCode += "\t\t"+"if(" + boolCond + ") goto if_then_" + Integer.toString(nextIf) + ";\n";
+        // Get the else expression
+        for (JmmNode child: jmmNode.getJmmChild(2).getChildren()){
+            var elseExpr = visit(child);
+            ollirCode = elseExpr;
+        }
+        ollirCode += "\t\t"+"goto if_end_" + nextIf + ";\n";
+        ollirCode += "\t\t"+"if_then_" + nextIf + ":\n";
+        // Get the if expression
+        for (JmmNode child: jmmNode.getJmmChild(1).getChildren()){
+            var ifExpr = visit(child);
+            ollirCode = ifExpr;
+        }
+        ollirCode += "\t\t"+"if_end_" + nextIf + ":\n";
+
+        return ollirCode;
     }
 
 
@@ -84,7 +104,11 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         return varName + getOllirType(varName);
     }
 
-
+    private int nextIfElse()  {
+        var result = if_elseCounter;
+        if_elseCounter++;
+        return result;
+    }
     private String nextTemp()  {
         var result = "temp_" + tempCounter;
         tempCounter++;
@@ -286,8 +310,9 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         if(jmmNode.getJmmParent().getKind().equals("MethodDef") && jmmNode.getJmmParent().get("name").equals("main") ){
             methodName = "main";
         }else{
-            if(jmmNode.getKind().equals("ExpStat")) methodName = jmmNode.getJmmParent().get("name");
+            if(jmmNode.getKind().equals("ExpStat") && !jmmNode.getJmmParent().getKind().equals("Stat")) methodName = jmmNode.getJmmParent().get("name");
             else if (jmmNode.getKind().equals("MethodCall")) methodName = jmmNode.getJmmParent().getJmmParent().get("name");
+            else if(jmmNode.getKind().equals("ExpStat")) methodName = table.getMethod(jmmNode.getJmmParent().getJmmParent().getJmmParent().get("signature")).getReturnType().getName();
         }
 
         JmmNode methodCall = jmmNode;
