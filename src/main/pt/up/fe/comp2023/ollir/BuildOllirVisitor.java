@@ -44,31 +44,55 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         addVisit("AssignStat", this::visitAssignment);
         addVisit("NewObject", this::visitNewObject);
         addVisit("BinaryOp", this::visitBinaryOp);
-        addVisit( "IfElseStat", this::visitIfElse);
+        addVisit("IfElseStat", this::visitIfElse);
         addVisit("WhileStat", this::visitWhile);
         addVisit("NewIntArray", this::visitNewArray);
+        addVisit("Length", this::visitLength);
+        addVisit("ArrayAccess", this::visitArray);
+        addVisit("ArrayAssignStat", this::visitArrayAssign);
 
         setDefaultVisit(this::setDefault);
     }
+
+    private String visitArrayAssign(JmmNode jmmNode, String s) {
+        ollirCode += jmmNode.get("value") + "[" + visit(jmmNode.getJmmChild(0)) + "]" + ".i32 :="+ parseType("int") + " "+ visit(jmmNode.getJmmChild(1)) + ";\n";
+        return ollirCode;
+    }
+
+    private String visitArray(JmmNode jmmNode, String s) {
+        String temp = nextTemp();
+        ollirCode += temp + " :=.i32 " + visit(jmmNode.getJmmChild(0)) + "[" + visit(jmmNode.getJmmChild(1)) + "].i32;\n";
+        return temp;
+    }
+
+    private String visitLength(JmmNode jmmNode, String varType) {
+        var value = nextTemp() + ".i32";
+
+        String p_code = "";
+        var child = visit(jmmNode.getJmmChild(0),value);
+        p_code += "\t\t" + value +  " :=.i32 " +  "arraylength(" + child + ")" + ".i32"  + ";\n";
+        ollirCode += p_code;
+
+        return value;
+
+}
 
     private String visitNewArray(JmmNode jmmNode, String varType) {
 
         var value = nextTemp() + varType;
 
+        // Take care of array indice
         String p_code = "";
         var child = visit(jmmNode.getJmmChild(0),value);
         p_code += "\t\t" + value +  " :=" + varType + " " +  child  + ";\n";
         ollirCode += p_code;
 
+        // Take of the new array line
+        String value2 = nextTemp() + ".array.i32";
+        ollirCode += "\t\t" + value2 + " :=.array.i32 " + "new(" + "array, " + value + ")" + ".array.i32;\n";
 
-
-        return "new(" + "array, " + value + ")" + ".array";
+        return value2;
     }
-
-
-
-
-
 
     private String visitWhile(JmmNode jmmNode, String s) {
 
@@ -331,19 +355,10 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         if (!parameters.isEmpty()) {
             for (Symbol parameter : parameters) {
+                ollirCode += parameter.getName() + parseType(parameter.getType().getName(),Boolean.parseBoolean(jmmNode.getJmmChild(0).get("isArray"))) + ", ";
 
-                if (parameter.getType().isArray()) {
-                    ollirCode += parameter.getName() + ".array." + parameter.getType().getName();
-                } else {
-                    ollirCode += " " + parameter.getName() + parseType(parameter.getType().getName(),parameter.getType().isArray()) + ",";
+                ollirCode = ollirCode.substring(0, ollirCode.length() - 2);
 
-                }
-                //remove ultima virgula
-                if (!Objects.equals(jmmNode.get("name"), "main")) {
-                    if (parameters.get(parameters.size() - 1) == parameter) {
-                        ollirCode = ollirCode.substring(0, ollirCode.length() - 1);
-                    }
-                }
             }
         }
         ollirCode += ")" + parseType(jmmNode.getJmmChild(0).get("name"),Boolean.parseBoolean(jmmNode.getJmmChild(0).get("isArray")))+ " {\n";
@@ -404,7 +419,10 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         boolean grandchildren = false;
         for (JmmNode grandchild : methodCall.getChildren()) {
             grandchildren = true;
-            if(!grandchild.get("value").equals(identifier.get("value")))
+            if(grandchild.getKind().equals("Length")){
+                code.append(" , " + visit(grandchild.getJmmChild(0)));
+            }
+            else if(!grandchild.get("value").equals(identifier.get("value")))
                 code.append( " , " + visit(grandchild));
 
         }
@@ -447,21 +465,21 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     private String visitAssignment(JmmNode jmmNode, String s) {
 
         String var_name = jmmNode.get("value"); //assignStat
-
         var idType = getOllirType(jmmNode.get("value"));
+        System.out.println("VAR: " + var_name + " " + idType);
 
-        if(jmmNode.getJmmChild(0).getKind().equals("NewIntArray")){
-            if(Boolean.parseBoolean(jmmNode.getJmmParent().getJmmChild(0).get("isArray"))){
+        /*
+        if(jmmNode.getJmmChild(0).getKind().equals("NewIntArray") || jmmNode.getJmmChild(0).getKind().equals("BinaryOp")){
+            if(Boolean.parseBoolean(jmmNode.getJmmParent().getJmmChild(jmmNode.getIndexOfSelf()-1).getJmmChild(0).get("isArray"))){
                 //var varType = getOllirType(jmmNode.getJmmParent().getJmmChild(0).get("name").toString());
                 var child2 = visit(jmmNode.getJmmChild(0),idType);
                 var value = nextTemp();
                 String p_code = "";
                 p_code += "\t\t"+value+ ".array" + idType + " :=.array" + idType + " " +  child2  + idType+ ";\n";
                 ollirCode += p_code;
-                return value;
-            }
-        }
 
+                return value;
+            }}*/
 
         var child = visit(jmmNode.getJmmChild(0),idType);
 
@@ -477,7 +495,6 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         if(idType.equals("")){ //caso tenha temps!!!
             idType += child.substring(child.indexOf("."));
         }
-
 
         var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
 
@@ -546,32 +563,6 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             default -> "." +op;
         };
     }
-
-    /* private String visitIfElse(JmmNode jmmNode, Boolean tempVariable) {
-
-        JmmNode condition = jmmNode.getChildren().get(0);
-        StringBuilder expressionString = new StringBuilder();
-        String condString = visit(condition,true);
-        List<String> res = getLastLine(condString);
-        int localLabel = labelCount;
-        ifCount = localLabel;
-        labelCount++;
-        condString = this.buildCondition(res.get(1), false);
-        expressionString.append(res.get(0));
-        expressionString.append(res.get(0).isEmpty() ? "" : "\t\t").append(res.get(0));
-
-        expressionString.append("\t\tif (").append(condString).append(") goto else").append(localLabel).append(";\n");
-
-        for (int i = 1; i < jmmNode.getNumChildren(); i++) {
-            expressionString.append("\t").append(visit(jmmNode.getChildren().get(i)));
-            expressionString.append("\t\t\t").append(visit(jmmNode.getChildren().get(i))).append("\n");
-        }
-        expressionString.append("\t\t\tgoto endif").append(localLabel).append(";\n");
-        expressionString.append("\t\t\tgoto endif").append(localLabel).append(";");
-        return expressionString.toString();
-        return "";
-    }*/
-
 
 }
 

@@ -37,7 +37,7 @@ public class UtilsAnalyser {
             case "Identifier" -> {
 
                 //aqui faltam casos!!  o .get("op") é qd o pai é binary op, mas aqui tb entram method calls ou seja .get("name")
-                String varName = jmmNode.getJmmParent().get("op");
+                String varName = jmmNode.get("value");
 
                 if (jmmNode.getAncestor("MethodDef").isEmpty()) {
                     Symbol varSymbol = symbolTable.findField(varName);
