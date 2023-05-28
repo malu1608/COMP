@@ -1,5 +1,12 @@
 # Compilers Project
+## Group 7H
+| Group Elements | Number | % of the work | Self-assessment of the project|
+|----------|----------|----------|----------|
+| Francisco Pimentel Serra | 202007723 | 30% |  16/20 |
+| Maria Luísa Salvador | 202006471 | 35% |  16/20 |
+| Mariana Lima Teixeira | 201905705 | 35% |  16/20 |
 
+## Tools and dependencies
 For this project, you need to install [Java](https://jdk.java.net/), [Gradle](https://gradle.org/install/), and [Git](https://git-scm.com/downloads/) (and optionally, a [Git GUI client](https://git-scm.com/downloads/guis), such as TortoiseGit or GitHub Desktop). Please check the [compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html) for Java and Gradle versions.
 
 ## Project setup
@@ -45,3 +52,4 @@ The testing framework, which uses the class ``pt.up.fe.comp.TestUtils``, has met
 In order for the test class to find your implementations for the stages, it uses the file ``config.properties`` that is in root of your repository. It has four fields, one for each stage (i.e. ``ParserClass``, ``AnalysisClass``, ``OptimizationClass``, ``BackendClass``), and initially it only has one value, ``pt.up.fe.comp2023.SimpleParser``, associated with the first stage.
 
 During the development of your compiler you will update this file in order to setup the classes that implement each of the compilation stages.
+
