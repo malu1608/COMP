@@ -169,32 +169,37 @@ public class MyJasmin implements JasminBackend {
         jasminCode.append(jasminMethodReturnType + "\n");
 
         //Inside method
-        jasminCode.append(".limit stack 99\n" + ".limit locals 99\n");
+        StringBuilder jasminMethodCode = new StringBuilder();
         InstructionsJasminCode buildInstr = new InstructionsJasminCode(labels, method);
+
+        Instructions.limits.reset();
+        Instructions.limits.registersUntil(method.getParams().size() + 1);
 
         HashMap<String, Instruction> labelMap = method.getLabels();
 
         for (Instruction instruction : method.getInstructions()) {
             for (String label : labelMap.keySet()) {
                 if (labelMap.get(label) == instruction) {
-                    jasminCode.append(label + ":\n");
+                    jasminMethodCode.append(label + ":\n");
                 }
             }
 
             String jasminMethodInstr = buildInstr.getJasminCode(instruction);
-            jasminCode.append(jasminMethodInstr);
+            jasminMethodCode.append(jasminMethodInstr);
+
             if (instruction.getInstType() == InstructionType.CALL) {
                 ElementType returnType = ((CallInstruction) instruction).getReturnType().getTypeOfElement();
                 if (returnType != ElementType.VOID || ((CallInstruction) instruction).getInvocationType() == CallType.invokespecial) {
-                    jasminCode.append(Instructions.pop());
+                    jasminMethodCode.append(Instructions.pop());
                 }
             }
 
         }
 
+        jasminCode.append(".limit stack ").append(Instructions.limits.getStackLimit()).append("\n");
+        jasminCode.append(".limit locals ").append(Instructions.limits.getLocalsLimit()).append("\n");
 
-
-        jasminCode.append(".end method\n");
+        jasminCode.append(jasminMethodCode + ".end method\n");
 
         return jasminCode.toString();
     }
