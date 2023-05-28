@@ -38,7 +38,7 @@ public class Launcher {
 
         // Instantiate JmmParser
         SimpleParser parser = new SimpleParser();
-
+        code = SpecsIo.read("test/pt/up/fe/comp/cp2/jasmin/OllirToJasminFields.jmm");
         // Parse stage
         JmmParserResult parserResult = parser.parse(code, config);
         System.out.println(parserResult.getRootNode().toTree());
