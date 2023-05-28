@@ -46,9 +46,29 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         addVisit("BinaryOp", this::visitBinaryOp);
         addVisit( "IfElseStat", this::visitIfElse);
         addVisit("WhileStat", this::visitWhile);
+        addVisit("NewIntArray", this::visitNewArray);
 
         setDefaultVisit(this::setDefault);
     }
+
+    private String visitNewArray(JmmNode jmmNode, String varType) {
+
+        var value = nextTemp() + varType;
+
+        String p_code = "";
+        var child = visit(jmmNode.getJmmChild(0),value);
+        p_code += "\t\t" + value +  " :=" + varType + " " +  child  + ";\n";
+        ollirCode += p_code;
+
+
+
+        return "new(" + "array, " + value + ")" + ".array";
+    }
+
+
+
+
+
 
     private String visitWhile(JmmNode jmmNode, String s) {
 
@@ -181,21 +201,21 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         List<Symbol> var_list = table.getLocalVariables(currentMethod);
         for (Symbol symbol : var_list) {
             if(symbol.getName().equals(varName)) {
-                return parseType(symbol.getType().getName());
+                return parseType(symbol.getType().getName(),symbol.getType().isArray());
             }
         }
 
         List<Symbol> param_list = table.getParameters(currentMethod);
         for (Symbol symbol : param_list) {
             if(symbol.getName().equals(varName)) {
-                return parseType(symbol.getType().getName());
+                return parseType(symbol.getType().getName(),symbol.getType().isArray());
             }
         }
 
         List<Symbol> fields_list = table.getFields();
         for (Symbol symbol : fields_list) {
             if(symbol.getName().equals(varName)) {
-                return parseType(symbol.getType().getName());
+                return parseType(symbol.getType().getName(),symbol.getType().isArray());
             }
         }
 
@@ -212,15 +232,20 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         }
 
         else if(jmmNode.getJmmChild(0).getKind().equals("Integer")){
-            ollirCode += "\t\tret" + parseType("int") + " "+  jmmNode.getJmmChild(0).get("value") + parseType("int") + ";\n";
+
+            ollirCode += "\t\tret" + getOllirType(jmmNode.getJmmChild(0).get("value")) + " "+  visit(jmmNode.getJmmChild(0)) + parseType("int") + ";\n";
         }
        
         else if (jmmNode.getJmmChild(0).getKind().equals("Identifier") ) {
 
             var child = visit(jmmNode.getJmmChild(0));
             String idType = child.substring(child.indexOf(".")+1);
+            if(Boolean.parseBoolean(jmmNode.getJmmParent().getJmmChild(0).get("isArray"))) {
+                ollirCode += "\t\tret." + idType +  " "+jmmNode.getJmmChild(0).get("value") + ".array." + idType +  ";\n";
+            }else{
 
-            ollirCode += "\t\tret" + parseType(idType) + " "+ child + ";\n";
+            ollirCode += "\t\tret."+ idType + " " + child  + ";\n";
+            }
 
             
         }
@@ -321,7 +346,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
                 }
             }
         }
-        ollirCode += ")" + parseType(jmmNode.getJmmChild(0).get("name"))+ " {\n";
+        ollirCode += ")" + parseType(jmmNode.getJmmChild(0).get("name"),Boolean.parseBoolean(jmmNode.getJmmChild(0).get("isArray")))+ " {\n";
 
         StringBuilder methodStr = new StringBuilder();
         for (JmmNode child : jmmNode.getChildren()) {
@@ -425,6 +450,19 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         var idType = getOllirType(jmmNode.get("value"));
 
+        if(jmmNode.getJmmChild(0).getKind().equals("NewIntArray")){
+            if(Boolean.parseBoolean(jmmNode.getJmmParent().getJmmChild(0).get("isArray"))){
+                //var varType = getOllirType(jmmNode.getJmmParent().getJmmChild(0).get("name").toString());
+                var child2 = visit(jmmNode.getJmmChild(0),idType);
+                var value = nextTemp();
+                String p_code = "";
+                p_code += "\t\t"+value+ ".array" + idType + " :=.array" + idType + " " +  child2  + idType+ ";\n";
+                ollirCode += p_code;
+                return value;
+            }
+        }
+
+
         var child = visit(jmmNode.getJmmChild(0),idType);
 
         if(table.isGlobal(var_name)){
@@ -439,6 +477,8 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         if(idType.equals("")){ //caso tenha temps!!!
             idType += child.substring(child.indexOf("."));
         }
+
+
         var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
 
         ollirCode += assign;
@@ -452,11 +492,6 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
                 var_name = "$" + temp + "." + var_name;
             }
         }
-
-
-
-
-
 
 
         return ollirCode;
