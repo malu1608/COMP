@@ -2,9 +2,9 @@
 ## Group 7H
 | Group Elements | Number | % of the work | Self-assessment of the project|
 |----------|----------|----------|----------|
-| Francisco Pimentel Serra | 202007723 | 30% |  16/20 |
-| Maria Luísa Salvador | 202006471 | 35% |  16/20 |
-| Mariana Lima Teixeira | 201905705 | 35% |  16/20 |
+| Francisco Pimentel Serra | 202007723 | 30% |  17/20 |
+| Maria Luísa Salvador | 202006471 | 35% |  17/20 |
+| Mariana Lima Teixeira | 201905705 | 35% |  17/20 |
 
 ## Tools and dependencies
 For this project, you need to install [Java](https://jdk.java.net/), [Gradle](https://gradle.org/install/), and [Git](https://git-scm.com/downloads/) (and optionally, a [Git GUI client](https://git-scm.com/downloads/guis), such as TortoiseGit or GitHub Desktop). Please check the [compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html) for Java and Gradle versions.
