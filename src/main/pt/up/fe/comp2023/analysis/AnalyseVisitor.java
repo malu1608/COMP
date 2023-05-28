@@ -141,7 +141,7 @@ public class AnalyseVisitor extends PostorderJmmVisitor<MySymbolTable, List<Repo
 
         // Static method call nodes have no attribute "type" so that may be used to check if the method call is static
         if (!jmmNode.getJmmChild(0).getAttributes().contains("type")) {
-            if (jmmNode.getJmmChild(0).get("name").equals(symbolTable.getClassName())) {
+            if (jmmNode.getJmmChild(0).get("value").equals(symbolTable.getClassName())) {
                 String methodSignature = inferMethodSignature(jmmNode, symbolTable);
                 boolean methodExists = symbolTable
                         .getMethods()
