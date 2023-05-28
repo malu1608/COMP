@@ -35,14 +35,17 @@ public class UtilsAnalyser {
             }
 
             case "Identifier" -> {
+
                 //aqui faltam casos!!  o .get("op") é qd o pai é binary op, mas aqui tb entram method calls ou seja .get("name")
                 String varName = jmmNode.getJmmParent().get("op");
+
                 if (jmmNode.getAncestor("MethodDef").isEmpty()) {
                     Symbol varSymbol = symbolTable.findField(varName);
                     if (varSymbol.getType().getName().equals("#UNKNOWN"))
                         return new Type("#UNKNOWN", false);
                     return varSymbol.getType();
                 }
+
                 Symbol varSymbol = symbolTable.findMethod(varName, jmmNode.getAncestor("MethodDef").get().get("name"));
                 if (varSymbol.getType().getName().equals("#UNKNOWN"))
                     return new Type("#UNKNOWN", false);
@@ -50,13 +53,14 @@ public class UtilsAnalyser {
             }
 
             case "IDType" -> {
-                String varName = jmmNode.getJmmParent().get("name");
+                String varName = jmmNode.get("name");
                 if (jmmNode.getAncestor("MethodDef").isEmpty()) {
                     Symbol varSymbol = symbolTable.findField(varName);
                     if (varSymbol.getType().getName().equals("#UNKNOWN"))
                         return new Type("#UNKNOWN", false);
                     return varSymbol.getType();
                 }
+
                 Symbol varSymbol = symbolTable.findMethod(varName, jmmNode.getAncestor("MethodDef").get().get("name"));
                 if (varSymbol.getType().getName().equals("#UNKNOWN"))
                     return new Type("#UNKNOWN", false);
@@ -84,6 +88,61 @@ public class UtilsAnalyser {
 
             default -> throw new RuntimeException("Could not get type from node: " + jmmNode.getKind());
         }
+    }
+
+    public static Type getTypeOperand(JmmNode jmmNode, MySymbolTable symbolTable) {
+
+        String kind = jmmNode.getKind();
+        switch (kind) {
+            case "UnaryOp" -> {
+                return getType(jmmNode.getChildren().get(0), symbolTable);
+            }
+            case "ArrayAccess" -> {
+                Type leftType = getType(jmmNode.getChildren().get(0), symbolTable);
+                if (leftType.isArray() && leftType.getName().equals("int"))
+                    return new Type("int", false);
+                if (leftType.isArray() && leftType.getName().equals("String"))
+                    return new Type("String", false);
+                return new Type("#UNKNOWN", false);
+            }
+            case "ArrayLength", "Integer" -> {
+                return new Type("int", false);
+            }
+            case "BinaryOp" -> {
+                return getTypeOperand(jmmNode.getJmmChild(1), symbolTable);
+            }
+            case "NotExpression", "Boolean" -> {
+                return new Type("boolean", false);
+            }
+            case "NewIntArray" -> {
+                return new Type("int", true);
+            }
+            case "NewObject" -> {
+                return new Type(jmmNode.get("name"), false);
+            }
+            case "MethodCall" -> {
+                return getTypeOperand(jmmNode.getJmmChild(0), symbolTable);
+            }
+            case "Identifier" -> {
+                String varName = jmmNode.get("value");
+                if (jmmNode.getAncestor("MethodDef").isEmpty()) {
+                    Symbol varSymbol = symbolTable.findField(varName);
+                    if (varSymbol.getType().getName().equals("#UNKNOWN"))
+                        return new Type("#UNKNOWN", false);
+                    return varSymbol.getType();
+                }
+
+                Symbol varSymbol = symbolTable.findMethod(varName, jmmNode.getAncestor("MethodDef").get().get("name"));
+                if (varSymbol.getType().getName().equals("#UNKNOWN"))
+                    return new Type("#UNKNOWN", false);
+                return varSymbol.getType();
+            }
+            case "This" -> {
+                return new Type(symbolTable.getClassName(), false);
+            }
+            default -> throw new RuntimeException("Unknown kind: " + kind);
+        }
+
     }
 
 
