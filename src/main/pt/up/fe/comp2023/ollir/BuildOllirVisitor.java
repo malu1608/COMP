@@ -23,6 +23,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
     private String currentMethod = null;
     private int if_elseCounter = 0;
+    private int whileCounter = 0;
 
     public BuildOllirVisitor(MySymbolTable new_table) {
         this.table = new_table;
@@ -44,8 +45,34 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         addVisit("NewObject", this::visitNewObject);
         addVisit("BinaryOp", this::visitBinaryOp);
         addVisit( "IfElseStat", this::visitIfElse);
+        addVisit("WhileStat", this::visitWhile);
 
         setDefaultVisit(this::setDefault);
+    }
+
+    private String visitWhile(JmmNode jmmNode, String s) {
+
+        int nextWhile = nextWhile();
+
+        ollirCode += "\t\t"+ "goto while_cond_" + Integer.toString(nextWhile) + ";\n";
+        ollirCode += "\t\t" +"while_body_" + nextWhile + ":\n";
+        // Get the else expression
+        for (JmmNode child: jmmNode.getJmmChild(1).getChildren()){
+            var bodyExpr = visit(child);
+            ollirCode = bodyExpr;
+        }
+        ollirCode += "\t\t"+ "while_cond_" + Integer.toString(nextWhile) + ":\n";
+
+        // Get the if expression of the while
+
+        var ifExpr = visit(jmmNode.getJmmChild(0));
+
+
+        ollirCode +=  "\t\t" + "if (" + ifExpr+ ") " +"goto while_body_" + nextWhile + ";\n";
+
+
+
+        return ollirCode;
     }
 
     private String visitIfElse(JmmNode jmmNode, String s) {
@@ -71,6 +98,8 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         return ollirCode;
     }
+
+
 
 
     private String visitExpStat(JmmNode jmmNode, String s) {
@@ -104,6 +133,11 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         return varName + getOllirType(varName);
     }
 
+    private int nextWhile() {
+        var result = whileCounter;
+        whileCounter++;
+        return result;
+    }
     private int nextIfElse()  {
         var result = if_elseCounter;
         if_elseCounter++;
