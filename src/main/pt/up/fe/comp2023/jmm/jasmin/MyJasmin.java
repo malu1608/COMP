@@ -95,9 +95,10 @@ public class MyJasmin implements JasminBackend {
         // Modifiers
         AccessModifiers accessModifier = field.getFieldAccessModifier();
         if (accessModifier != AccessModifiers.DEFAULT) {
-            code.append(accessModifier.name().toLowerCase() + " ");
+            jasminCode.append(accessModifier.name().toLowerCase() + " ");
         }
         if (field.isStaticField())
+            jasminCode.append("static ");
 
         if (field.isFinalField()) {
             jasminCode.append("final ");
@@ -106,14 +107,13 @@ public class MyJasmin implements JasminBackend {
         jasminCode.append(field.getFieldName() + " ");
 
         String jasminField = getJasminCode(field.getFieldType());
-        code.append(jasminField);
         jasminCode.append(jasminField);
 
         if (field.isInitialized()){
             jasminCode.append(" = ").append(field.getInitialValue());
         }
 
-        return code.toString();
+        return jasminCode.toString();
     }
 
     private String getJasminCode(Type fieldType) {
