@@ -24,7 +24,9 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
         addVisit("ImportDeclaration", this::visitImport);
         addVisit("ClassDeclaration", this::visitClassDeclaration);
         addVisit("MethodDef", this::visitMethod);
+
     }
+
 
     private void visitNode(JmmNode jmmNode, MySymbolTable table, List<Report> reports) {
         reports.addAll(visit(jmmNode, table));
@@ -100,7 +102,7 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
         List<Symbol> parameters = new ArrayList<>();
         List<Symbol> variables = new ArrayList<>();
 
-        for (JmmNode child: jmmNode.getChildren()) {
+        for (JmmNode child : jmmNode.getChildren()) {
             System.out.println(child.getKind());
             if (child.getKind().equals("VarDecl")) {
                 String name = child.get("name");
@@ -121,34 +123,39 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
                         Type type = new Type(grandchild.getJmmChild(0).get("name"), isArray);
                         Symbol symbol = new Symbol(type, name);
                         if (parameters.stream().anyMatch(s -> s.getName().equals(symbol.getName()))) {
-                            reports.add(UtilsReport.symbolAlreadyDefinedReport(child , "variable", symbol.getName(), "method", methodName));
+                            reports.add(UtilsReport.symbolAlreadyDefinedReport(child, "variable", symbol.getName(), "method", methodName));
                         } else {
                             parameters.add(symbol);
                         }
                     }
                 }
             }
+
+
         }
 
-        StringBuilder methodSignatureBuilder = new StringBuilder();
-        methodSignatureBuilder.append(methodName);
-        for (Symbol parameter: parameters) {
-            methodSignatureBuilder.append("#");
-            methodSignatureBuilder.append(parameter.getType().print());
+            StringBuilder methodSignatureBuilder = new StringBuilder();
+            methodSignatureBuilder.append(methodName);
+            for (Symbol parameter : parameters) {
+                methodSignatureBuilder.append("#");
+                methodSignatureBuilder.append(parameter.getType().print());
+            }
+            String methodSignature = methodSignatureBuilder.toString();
+
+            if (table.getMethods().contains(methodSignature)) {
+                String symbolName = UtilsAnalyser.getMethodSymbolName(methodSignature);
+                reports.add(UtilsReport.symbolAlreadyDefinedReport(jmmNode, "method", symbolName, "class", table.getClassName()));
+            } else {
+                table.addMethod(methodSignature, returnType, parameters, variables);
+            }
+
+            jmmNode.put("signature", methodSignature);
+
+            return reports;
         }
-        String methodSignature = methodSignatureBuilder.toString();
 
-        if (table.getMethods().contains(methodSignature)) {
-            String symbolName = UtilsAnalyser.getMethodSymbolName(methodSignature);
-            reports.add(UtilsReport.symbolAlreadyDefinedReport(jmmNode, "method", symbolName, "class", table.getClassName()));
-        } else {
-            table.addMethod(methodSignature, returnType, parameters, variables);
-        }
 
-        jmmNode.put("signature", methodSignature);
 
-        return reports;
-    }
 
 
 }

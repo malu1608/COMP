@@ -35,41 +35,52 @@ public class MySymbolTable implements SymbolTable {
 
     @Override
     public List<String> getMethods() {
-        return new ArrayList<>(methodsList.keySet());
+        List<String> methodNames = new ArrayList<>();
+        System.out.println(methodNames);
+        methodNames.addAll(methodsList.keySet());
+
+        return methodNames;
+
     }
 
     private Method getMethodInternal(String s) {
-        var method = methodsList.get(s);
-
+        return this.methodsList.get(s);
+        /*
         if (method == null) {
             method = new Method(null, Collections.emptyList(), Collections.emptyList());
-        }
-
-        return method;
+            System.out.println("bye"+method);
+        }*/
     }
+
 
     @Override
     public Type getReturnType(String s) {
-        return getMethodInternal(s).getReturnType();
+        return methodsList.get(s).getReturnType();
     }
 
     @Override
     public List<Symbol> getParameters(String s) {
-        return getMethodInternal(s).getParameters();
+        //System.out.println("mname + " + s);
+        //for(String k : methodsList.keySet()) System.out.println(k);
+        //System.out.println(methodsList.keySet());
+        //System.out.println(s + methodsList.get(s));
+        return methodsList.get(s).getParameters();
     }
 
     @Override
-    public List<Symbol> getLocalVariables(String s) {
+    public List<Symbol> getLocalVariables(String methodname) {
 
-        return getMethodInternal(s).getLocalVariables();
+        return methodsList.get(methodname).getLocalVariables();
     }
 
     public void addImport(String _import) {
         importList.add(_import);
     }
 
+
     public void addMethod(String s, Type returnType, List<Symbol> parameters, List<Symbol> variables) {
-        methodsList.put(s, new Method(returnType, parameters, variables));
+        System.out.println("signature " + s);
+        methodsList.put( s, new Method(returnType, parameters, variables));
     }
 
     public void addField(Symbol _field) {
@@ -180,5 +191,14 @@ public class MySymbolTable implements SymbolTable {
         }
 
         return new Symbol(new Type("#UNKNOWN", false), name);
+    }
+
+    public boolean isClassImported(String className) {
+        for (String imp : importList) {
+            if (imp.endsWith(className)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
