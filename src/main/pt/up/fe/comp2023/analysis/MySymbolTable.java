@@ -181,4 +181,13 @@ public class MySymbolTable implements SymbolTable {
 
         return new Symbol(new Type("#UNKNOWN", false), name);
     }
+
+    public boolean isClassImported(String className) {
+        for (String imp : importList) {
+            if (imp.endsWith(className)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

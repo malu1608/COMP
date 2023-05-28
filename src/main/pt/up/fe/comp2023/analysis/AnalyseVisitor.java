@@ -5,10 +5,11 @@ import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp.jmm.ast.PostorderJmmVisitor;
 import pt.up.fe.comp.jmm.report.Report;
+import pt.up.fe.comp.jmm.report.ReportType;
+import pt.up.fe.comp.jmm.report.Stage;
 import pt.up.fe.specs.util.SpecsCollections;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class AnalyseVisitor extends PostorderJmmVisitor<MySymbolTable, List<Report>> {
     static final List<String> TYPES = Arrays.asList("int", "boolean", "void");
@@ -99,25 +100,31 @@ public class AnalyseVisitor extends PostorderJmmVisitor<MySymbolTable, List<Repo
 
     private List<Report> visitBinaryOp(JmmNode jmmNode, MySymbolTable symbolTable) {
         List<Report> reports = new ArrayList<>();
-        Type lhsType = UtilsAnalyser.getType(jmmNode.getJmmChild(0), symbolTable);
-        Type rhsType = UtilsAnalyser.getType(jmmNode.getJmmChild(1), symbolTable);
-        String operator = jmmNode.get("op");
+        JmmNode left = jmmNode.getChildren().get(0);
+        JmmNode right = jmmNode.getChildren().get(1);
+        String op = jmmNode.get("op");
+        Type leftType = UtilsAnalyser.getType(left, symbolTable);
+        Type rightType = UtilsAnalyser.getType(right, symbolTable);
 
-        if (lhsType.getName().equals("#UNKNOWN") || rhsType.getName().equals("#UNKNOWN")) {
+        if (leftType.getName().equals("#UNKOWN") || rightType.getName().equals("#UNKOWN")) {
             putUnknownType(jmmNode);
+        }
+
+        if (!leftType.equals(rightType)) {
+            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(jmmNode.get("lineStart")), "Cannot apply operator " + op));
             return reports;
         }
 
-        if (!lhsType.equals(rhsType) || !isValidBinaryOp(lhsType, operator)) {
-            putUnknownType(jmmNode);
-            reports.add(UtilsReport.operatorCannotBeAppliedReport(jmmNode, operator, lhsType.print(), rhsType.print()));
-            return reports;
-        }
+        if (ARITHMETIC_OPS.contains(op)) {
+            if (leftType.isArray() || rightType.isArray()) {
+                reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(jmmNode.get("lineStart")), "Cannot apply operator" + op + " to array"));
+                return reports;
+            }
+            if (!(leftType.getName().equals("int") && rightType.getName().equals("int"))) {
+                reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(jmmNode.get("lineStart")), "Cannot apply operator" + op + " to " + leftType.getName()));
+                return reports;
+            }
 
-        if (COMPARISON_OP.contains(operator)) {
-            putType(jmmNode, new Type("boolean", false));
-        } else {
-            putType(jmmNode, lhsType);
         }
 
         return reports;
@@ -139,75 +146,37 @@ public class AnalyseVisitor extends PostorderJmmVisitor<MySymbolTable, List<Repo
     private List<Report> visitMethodCall(JmmNode jmmNode, MySymbolTable symbolTable) {
         List<Report> reports = new ArrayList<>();
 
-        // Static method call nodes have no attribute "type" so that may be used to check if the method call is static
-        if (!jmmNode.getJmmChild(0).getAttributes().contains("type")) {
-            if (jmmNode.getJmmChild(0).get("name").equals(symbolTable.getClassName())) {
-                String methodSignature = inferMethodSignature(jmmNode, symbolTable);
-                boolean methodExists = symbolTable
-                        .getMethods()
-                        .stream()
-                        .anyMatch(m -> m.substring(0, m.indexOf("#")).equals(jmmNode.get("name")));
+        String methodName = jmmNode.get("name");
+        String superClass = symbolTable.getSuper();
 
-                if (methodExists) {
-                    String symbolName = UtilsAnalyser.getMethodSymbolName(methodSignature);
-                    reports.add(UtilsReport.nonStaticInStaticContext(jmmNode, symbolName));
-                } else if (symbolTable.getSuper() == null) {
-                    String symbolName = UtilsAnalyser.getMethodSymbolName(methodSignature);
-                    reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, symbolName));
+        Type classType = UtilsAnalyser.getTypeOperand(jmmNode.getJmmChild(0), symbolTable);
+        String className = classType.getName();
+
+        if (className.equals(symbolTable.getClassName())) {
+            if (symbolTable.getMethods().contains(methodName)) {
+                List<Symbol> methodParams = symbolTable.getParameters(methodName);
+                int methodParamsSize = 0;
+                if (methodParams != null) methodParamsSize = methodParams.size();
+                JmmNode argumentsNode = jmmNode.getJmmChild(1);
+                if (methodParamsSize != argumentsNode.getNumChildren()) {
+                    reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(jmmNode.get("lineStart")), "Method " + methodName + " has " + methodParams.size() + " parameters"));
+                } else {
+                    for (int i = 0; i < argumentsNode.getNumChildren(); i++) {
+                        Type paramType = methodParams.get(i).getType();
+                        Type argType = UtilsAnalyser.getType(argumentsNode.getJmmChild(i), symbolTable);
+                        if (!paramType.equals(argType)) {
+                            reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(jmmNode.get("lineStart")), "Method " + methodName + " has " + methodParams.size() + " parameters"));
+                        }
+                    }
                 }
+            } else if (!(superClass != null && symbolTable.isClassImported(superClass))) {
+                reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(jmmNode.get("lineStart")), "Method " + methodName + " is not declared"));
             }
-            putUnknownType(jmmNode);
-            return reports;
-        }
-
-        Type operand = UtilsAnalyser.getType(jmmNode.getJmmChild(0), symbolTable);
-        if (TYPES.contains(operand.getName())) {
-            putUnknownType(jmmNode);
-            reports.add(UtilsReport.cannotBeDereferencedReport(jmmNode, operand.getName()));
-            return reports;
-        }
-
-        if (operand.getName().equals("#UNKNOWN") || operand.isArray() || !symbolTable.getClassName().equals(operand.getName())) {
-            putUnknownType(jmmNode);
-            return reports;
-        }
-
-        String methodSignature = inferMethodSignature(jmmNode, symbolTable);
-        Optional<String> foundMethodSignature;
-        if (symbolTable.getMethods().contains(methodSignature)) {
-            foundMethodSignature = Optional.of(methodSignature);
         } else {
-            List<String> foundMethodSignatures = symbolTable
-                    .getMethods()
-                    .stream()
-                    .filter(m -> signatureIsCompatibleWith(m, methodSignature, symbolTable))
-                    .collect(Collectors.toList());
-            if (foundMethodSignatures.size() > 1) {
-                reports.add(UtilsReport.ambiguousMethodCallReport(jmmNode, jmmNode.get("name")));
-                putUnknownType(jmmNode);
-                return reports;
-            } else {
-                foundMethodSignature = foundMethodSignatures.stream().findAny();
+            if (!symbolTable.isClassImported(className)) {
+                reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(jmmNode.get("lineStart")), "Method " + methodName + " is not declared"));
             }
         }
-
-        if (foundMethodSignature.isPresent()) {
-            Type returnType = symbolTable.getReturnType(foundMethodSignature.get());
-            putType(jmmNode, returnType);
-        } else {
-            boolean incompleteSignature = methodSignature.contains("##UNKNOWN");
-            boolean methodLooselyExists = incompleteSignature &&
-                    symbolTable
-                            .getMethods()
-                            .stream()
-                            .anyMatch(m -> m.split("#")[0].equals(jmmNode.get("name")));
-            if (!methodLooselyExists && symbolTable.getSuper() == null) {
-                String symbolName = UtilsAnalyser.getMethodSymbolName(methodSignature);
-                reports.add(UtilsReport.cannotFindSymbolReport(jmmNode, symbolName));
-            }
-            putUnknownType(jmmNode);
-        }
-
         return reports;
     }
 
