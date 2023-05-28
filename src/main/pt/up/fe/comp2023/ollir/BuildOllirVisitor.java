@@ -180,12 +180,15 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         else if(jmmNode.getJmmChild(0).getKind().equals("Integer")){
             ollirCode += "\t\tret" + parseType("int") + " "+  jmmNode.getJmmChild(0).get("value") + parseType("int") + ";\n";
         }
+       
+        else if (jmmNode.getJmmChild(0).getKind().equals("Identifier") ) {
 
-        else if(jmmNode.getJmmChild(0).getKind().equals("Identifier") ) {  //boolean esquisito!
-            if(jmmNode.getKind().equals("ReturnStmt") ){
-                ollirCode += "\t\tret" + parseType("boolean") + " "+  jmmNode.getJmmChild(0).get("value") + parseType("boolean") + ";\n";
-            }
-            else{visit(jmmNode.getJmmChild(0));}
+            var child = visit(jmmNode.getJmmChild(0));
+            String idType = child.substring(child.indexOf(".")+1);
+
+            ollirCode += "\t\tret" + parseType(idType) + " "+ child + ";\n";
+
+            
         }
 
         return ollirCode;
@@ -390,22 +393,6 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         var child = visit(jmmNode.getJmmChild(0),idType);
 
-
-
-        int nr ;
-        nr = getParameters(jmmNode.getJmmParent().get("signature"),var_name);
-        if (nr != -1){
-            String temp = Integer.toString(nr);
-            var_name = "$" + temp + "." + var_name;
-        }
-
-        if(idType.equals("")){ //caso tenha temps!!!
-            idType += child.substring(child.indexOf("."));
-        }
-        var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
-
-
-
         if(table.isGlobal(var_name)){
 
             ollirCode += "\t\tputfield(this, " + var_name + idType +  ", " + child +")" +  ".V;\n";
@@ -414,7 +401,28 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             return ollirCode;
             //ollirCode += "\t\t"+"invokespecial(" + result+ idType + ", \"<init>\").V;\n";
         }
+
+        if(idType.equals("")){ //caso tenha temps!!!
+            idType += child.substring(child.indexOf("."));
+        }
+        var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
+
         ollirCode += assign;
+
+        int nr ;
+
+        if (jmmNode.getJmmParent().getKind().equals("MethodDef")) {
+            nr = getParameters(jmmNode.getJmmParent().get("signature"), var_name);
+            if (nr != -1) {
+                String temp = Integer.toString(nr);
+                var_name = "$" + temp + "." + var_name;
+            }
+        }
+
+
+
+
+
 
 
         return ollirCode;
