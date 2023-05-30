@@ -12,8 +12,9 @@ import java.util.Objects;
 //TODO
 /*
 * method calls !!!
-* lidar com arrays
-*
+* lidar com arrays - ioPlus.printResult(a[d.func(0)]);
+* this!!
+* if , while esquisito?'
 */
 
 public class BuildOllirVisitor extends AJmmVisitor<String,String> {
@@ -123,7 +124,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
     private String visitIfElse(JmmNode jmmNode, String s) {
 
-        var boolCond = visit(jmmNode.getJmmChild(0));
+        var boolCond = visit(jmmNode.getJmmChild(0),".bool");
 
         int nextIf = nextIfElse();
 
@@ -154,8 +155,9 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     }
 
 
-    private String visitIdentifier(JmmNode jmmNode, String methodName) {
+    private String visitIdentifier(JmmNode jmmNode, String idType) {
         var varName = jmmNode.get("value");
+        System.out.println("imprime aqui: " + idType);
         if(table.isGlobal(varName)){
             var varType = getOllirType(varName);
             var value = nextTemp();
@@ -166,17 +168,18 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             //val = value.substring(0, value.length() - 4) + varType;
         }
 
+        /*
         if(table.isLocalVariable(varName,currentMethod)){
-            String idType = "";
+            String idType2 = "";
             for(JmmNode jmmNode1 : jmmNode.getAncestor("MethodDef").get().getChildren()) {
                 if (jmmNode1.getKind().equals("VarDecl") && jmmNode1.get("name").equals(varName)) {
-                    idType = parseType(jmmNode1.getJmmChild(0).get("name"), Boolean.parseBoolean(jmmNode1.getJmmChild(0).get("isArray")));
+                    idType2 = parseType(jmmNode1.getJmmChild(0).get("name"), Boolean.parseBoolean(jmmNode1.getJmmChild(0).get("isArray")));
                 }
             }
-            return varName + idType ;
+            return varName + idType2 ;*/
 
-        }
-        return varName + getOllirType(varName);
+
+        return varName + idType;
     }
 
     private int nextWhile() {
@@ -208,14 +211,14 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     private String visitBinaryOp(JmmNode jmmNode, String methodName) {
         var op = jmmNode.get("op");
         var assign_type = getAssigmentRetType(op);
-        var resultType = assign_type;
 
-        var lhsValue = visit(jmmNode.getJmmChild(0) ,resultType);
-        var rhsValue =  visit(jmmNode.getJmmChild(1) ,resultType);
 
-        var result = nextTemp()  + resultType;
+        var lhsValue = visit(jmmNode.getJmmChild(0) ,assign_type);
+        var rhsValue =  visit(jmmNode.getJmmChild(1) ,assign_type);
 
-        var binOpCode = result + " :="+resultType + " " + lhsValue + " "+ op+assign_type+" "
+        var result = nextTemp()  + assign_type;
+
+        var binOpCode = result + " :="+assign_type + " " + lhsValue + " "+ op+assign_type+" "
                 + rhsValue +  ";\n";
         ollirCode += binOpCode;
 
@@ -259,21 +262,13 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         else if(jmmNode.getJmmChild(0).getKind().equals("Integer")){
 
-            ollirCode += "\t\tret" + parseType("int") +  " "+  visit(jmmNode.getJmmChild(0)) +  ";\n";
+            ollirCode += "\t\tret" +  parseType("int")+  " "+  visit(jmmNode.getJmmChild(0),"int") +  ";\n";
         }
        
         else if (jmmNode.getJmmChild(0).getKind().equals("Identifier") ) {
 
-            var child = visit(jmmNode.getJmmChild(0));
-            String idType = child.substring(child.indexOf(".")+1);
-            if(Boolean.parseBoolean(jmmNode.getJmmParent().getJmmChild(0).get("isArray"))) {
-                ollirCode += "\t\tret." + idType +  " "+jmmNode.getJmmChild(0).get("value") + ".array." + idType +  ";\n";
-            }else{
+            ollirCode += "\t\tret"+ parseType(jmmNode.getJmmParent().getJmmChild(0).get("name"),Boolean.parseBoolean(jmmNode.getJmmParent().getJmmChild(0).get("isArray"))) + " " + visit(jmmNode.getJmmChild(0),parseType(jmmNode.getJmmParent().getJmmChild(0).get("name")))  + ";\n";
 
-            ollirCode += "\t\tret."+ idType + " " + child  + ";\n";
-            }
-
-            
         }
 
         return ollirCode;
