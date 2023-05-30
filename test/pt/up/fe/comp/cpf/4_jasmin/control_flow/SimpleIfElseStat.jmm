@@ -9,7 +9,7 @@ class SimpleIfElseStat {
 		a = 5;
 		b = 10;
 
-        if(a < b){
+        if(!(a < b)){
           ioPlus.printResult(a);
         } else {
            ioPlus.printResult(b);

@@ -52,16 +52,28 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         addVisit("ArrayAccess", this::visitArray);
         addVisit("ArrayAssignStat", this::visitArrayAssign);
         addVisit("NotExpression", this::visitNotExp);
+        addVisit("UnaryOp", this::visitParenthesis);
 
 
         setDefaultVisit(this::setDefault);
     }
 
-    private String visitNotExp(JmmNode jmmNode, String s) {
-        String op = "!";
+    private String visitParenthesis(JmmNode jmmNode, String s) {
+        /*String op = "!";
         var value = nextTemp() + getAssigmentRetType(op);
 
         ollirCode += value  + " "+ ":=" + getAssigmentRetType(op) + " "+ op + getAssigmentRetType("!") + " "+ visit(jmmNode.getJmmChild(0), "boolean") + ";\n";
+        return value;*/
+        return visit(jmmNode.getJmmChild(0));
+    }
+
+    private String visitNotExp(JmmNode jmmNode, String s) {
+        String op = "!";
+        var value = nextTemp() + getAssigmentRetType(op);
+        StringBuilder code = new StringBuilder();
+        code = code.append(value  + " "+ ":=" + getAssigmentRetType(op) + " "+ op + getAssigmentRetType("!") + " "+ visit(jmmNode.getJmmChild(0), "boolean") + ";\n");
+
+        ollirCode += code.toString();
         return value;
     }
 
