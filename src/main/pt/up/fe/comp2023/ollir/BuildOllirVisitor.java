@@ -59,11 +59,6 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     }
 
     private String visitParenthesis(JmmNode jmmNode, String s) {
-        /*String op = "!";
-        var value = nextTemp() + getAssigmentRetType(op);
-
-        ollirCode += value  + " "+ ":=" + getAssigmentRetType(op) + " "+ op + getAssigmentRetType("!") + " "+ visit(jmmNode.getJmmChild(0), "boolean") + ";\n";
-        return value;*/
         return visit(jmmNode.getJmmChild(0));
     }
 
@@ -71,7 +66,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         String op = "!";
         var value = nextTemp() + getAssigmentRetType(op);
         StringBuilder code = new StringBuilder();
-        code = code.append(value  + " "+ ":=" + getAssigmentRetType(op) + " "+ op + getAssigmentRetType("!") + " "+ visit(jmmNode.getJmmChild(0), "boolean") + ";\n");
+        code = code.append("\t\t" + value  + " "+ ":=" + getAssigmentRetType(op) + " "+ op + getAssigmentRetType("!") + " "+ visit(jmmNode.getJmmChild(0), "boolean") + ";\n");
 
         ollirCode += code.toString();
         return value;
@@ -241,7 +236,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         var result = nextTemp()  + assign_type;
 
-        var binOpCode = result + " :="+assign_type + " " + lhsValue + " "+ op+assign_type+" "
+        var binOpCode = "\t\t" + result + " :="+assign_type + " " + lhsValue + " "+ op+assign_type+" "
                 + rhsValue +  ";\n";
         ollirCode += binOpCode;
 
@@ -290,6 +285,8 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
             ollirCode += "\t\tret"+ parseType(jmmNode.getJmmParent().getJmmChild(0).get("name"),Boolean.parseBoolean(jmmNode.getJmmParent().getJmmChild(0).get("isArray"))) + " " + visit(jmmNode.getJmmChild(0),parseType(jmmNode.getJmmParent().getJmmChild(0).get("name")))  + ";\n";
 
+        } else if(jmmNode.getJmmChild(0).getKind().equals("Boolean")) {
+            ollirCode += "\t\tret" +  parseType("boolean")+  " "+  visit(jmmNode.getJmmChild(0),"boolean") +  ";\n";
         }
 
         return "";
@@ -411,12 +408,9 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         }
         JmmNode identifier = methodCall.getJmmChild(0);
         StringBuilder code = new StringBuilder();
-        /*
-        if(methodCall.getChildren().size() > 1){
-            JmmNode arguments = methodCall.getJmmChild(1);
-            visit(arguments, methodName);
-        }*/
-        String idType = getOllirType(identifier.get("value"));
+
+        String idType = visit(identifier);
+
         boolean istatic = false;
         String returnType = ".V";
         if (identifier.getKind().equals("Identifier") && table.checkVariableInImports(identifier.get("value")) ) {
@@ -425,7 +419,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             istatic = true;
         }
         else {
-            code.append("invokevirtual(" + identifier.get("value") +  idType + ", \"" + methodCall.get("name") + "\"" );
+            code.append("invokevirtual(" + idType + ", \"" + methodCall.get("name") + "\"" );
         }
 
         // Search for parameters
@@ -454,14 +448,14 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
             } else {
                 if (jmmNode.getJmmParent().getKind().equals("AssignStat")) {
-                    returnType = getOllirType(jmmNode.getJmmParent().get("value"));
+                    returnType = getOllirType(jmmNode.getAncestor("AssignStat").get().get("value"));
                     code.append(returnType);
                 }
             }
         }
 
 
-        var value = nextTemp() + parseType("int");
+        var value = nextTemp() + returnType;
         ollirCode +=  value +  " :=" + returnType+ " " + code + ";\n";
         return value;
 
@@ -553,19 +547,18 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
     private String visitNewObject (JmmNode jmmNode, String idType) {
 
-        for (Symbol locVar : table.getLocalVariables(currentMethod)){
-            if(locVar.getName().equals(jmmNode.getJmmParent().get("value"))){
-                var val = nextTemp();
-                var varType = jmmNode.get("value");
-                String p_code = "";
-                p_code += val + "."+varType + " :=." + varType + " new(" + jmmNode.get("value")+ ")."+ varType+ ";\n";
-                p_code += "\t\tinvokespecial(" + val+"."+varType +  ", \"\").V;\n";
-                ollirCode += p_code;
-                return val+"."+varType;
-            }
-        }
+        //if(table.getMethod(currentMethod).getLocalVariable(jmmNode.get("value")).getType().getName().equals(jmmNode.get("value"))){
+            var val = nextTemp();
+            var varType = jmmNode.get("value");
+            String p_code = "";
+            p_code += val + "."+varType + " :=." + varType + " new(" + jmmNode.get("value")+ ")."+ varType+ ";\n";
+            p_code += "\t\tinvokespecial(" + val+"."+varType +  ", \"\").V;\n";
+            ollirCode += p_code;
+            return val+"."+varType;
+        //}
 
-        return "new(" + jmmNode.get("value") + ")" + idType;
+
+        //return "new(" + jmmNode.get("value") + ")" + idType;
     }
 
     public String getCode(){

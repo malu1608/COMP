@@ -1,16 +1,15 @@
-class CompileArithmetic {
+import io;
+import T;
+class S {
+    public boolean func(){
+        T a;
 
-    public static void main(String[] args) {
+        a = (new T()).print(1);
 
+        return true;
     }
 
-    public int foo() {
-        int a;
-        int b;
+    public static void main(String[] args){
 
-        a = 1;
-        b = 2;
-
-        return a + b;
     }
 }
