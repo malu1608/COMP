@@ -106,9 +106,11 @@ public class BuildSymbolTableVisitor extends AJmmVisitor<MySymbolTable, List<Rep
             System.out.println(child.getKind());
             if (child.getKind().equals("VarDecl")) {
                 String name = child.get("name");
-                isArray = child.getAttributes().contains("isArray") && child.get("isArray").equals("true");
+                System.out.println("oi" + child.getAttributes());
+                isArray = child.getJmmChild(0).getAttributes().contains("isArray") && child.getJmmChild(0).get("isArray").equals("true");
                 Type type = new Type(child.getJmmChild(0).get("name"), isArray);
-                Symbol symbol = new Symbol(type, name);
+                Symbol symbol = new Symbol(type, name);  // hello, you can do it lets go, car
+                //carmini, tou farta :(( mas queria chegar aos 100 tou no 91 - 91 :ooooo nice qual é que falta? v te mandar!!
                 if (Stream.concat(variables.stream(), parameters.stream()).anyMatch(s -> s.getName().equals(symbol.getName()))) {
                     reports.add(UtilsReport.symbolAlreadyDefinedReport(child, "variable", symbol.getName(), "method", methodName));
                 } else {

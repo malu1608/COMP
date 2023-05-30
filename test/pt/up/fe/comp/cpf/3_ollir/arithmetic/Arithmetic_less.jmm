@@ -4,6 +4,9 @@ class Arithmetic_less {
 	public static void main(String[] args) {
 		boolean a;
 
+        io.print(!a)
+        a = (new testClass()).foo(1);
+
 		a = 10 < 20;
 		
 		if(a) {

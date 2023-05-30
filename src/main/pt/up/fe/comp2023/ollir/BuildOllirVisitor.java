@@ -440,17 +440,13 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
                 code.append(returnType);
 
-                //var value = nextTemp() + parseType("int");
-                //System.out.println(value + " :=" + returnType + " " + code + "\n");
-                //ollirCode += value + " :=" + returnType + " " + code + "\n";
-                //return value;
             } else {
                 if (jmmNode.getJmmParent().getKind().equals("AssignStat")) {
                     returnType = getOllirType(jmmNode.getJmmParent().get("value"));
                     code.append(returnType);
                 }
             }
-        }    //code.append(".").append(returnType.split("\\.")[1]);
+        }
 
 
         var value = nextTemp() + parseType("int");
