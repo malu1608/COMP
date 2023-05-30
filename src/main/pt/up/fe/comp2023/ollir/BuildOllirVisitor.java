@@ -347,6 +347,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         if (!parameters.isEmpty()) {
             for (Symbol parameter : parameters) {
+                System.out.println("caralhhooo " + parameter.getType().isArray());
                 ollirCode += parameter.getName() + parseType(parameter.getType().getName(),parameter.getType().isArray()) + ", ";
 
             }
@@ -378,9 +379,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         if(jmmNode.getJmmParent().getKind().equals("MethodDef") && jmmNode.getJmmParent().get("name").equals("main") ){
             methodName = "main";
         }else{
-            if(jmmNode.getKind().equals("ExpStat") && !jmmNode.getJmmParent().getKind().equals("Stat")) methodName = jmmNode.getJmmParent().get("name");
-            else if (jmmNode.getKind().equals("MethodCall")) methodName = jmmNode.getJmmParent().getJmmParent().get("name");
-            else if(jmmNode.getKind().equals("ExpStat")) methodName = table.getMethod(jmmNode.getJmmParent().getJmmParent().getJmmParent().get("signature")).getReturnType().getName();
+            methodName = table.getMethod(jmmNode.getAncestor("MethodDef").get().get("signature")).getReturnType().getName();
         }
 
         JmmNode methodCall = jmmNode;
@@ -410,11 +409,12 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         boolean grandchildren = false;
         for (JmmNode grandchild : methodCall.getChildren()) {
             grandchildren = true;
-            if(grandchild.getKind().equals("Length")){
+            if(grandchild.getKind().equals("Length") || grandchild.getKind().equals("ArrayAccess")){
                 code.append(" , " + visit(grandchild.getJmmChild(0)));
             }
             else if(!grandchild.get("value").equals(identifier.get("value")))
                 code.append( " , " + visit(grandchild));
+
 
         }
 
@@ -462,19 +462,20 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         var child = visit(jmmNode.getJmmChild(0),idType);
 
-        if(table.isGlobal(var_name)){
+
+        if(table.isGlobal(var_name) && getOllirType(var_name).equals("") ){ //2 cond p caso de ter varlocal igual a um field
 
             ollirCode += "\t\tputfield(this, " + var_name + idType +  ", " + child +")" +  ".V;\n";
-            //var var_assigned =  visit(jmmNode.getJmmParent().getJmmChild(jmmNode.getIndexOfSelf()+1).getJmmChild(0));
 
             return ollirCode;
-            //ollirCode += "\t\t"+"invokespecial(" + result+ idType + ", \"<init>\").V;\n";
+
         }
 
         if(idType.equals("")){ //caso tenha temps!!!
             idType += child.substring(child.indexOf("."));
         }
 
+        visit(jmmNode.getJmmChild(0),idType);
         var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
 
         ollirCode += assign;
@@ -509,6 +510,8 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             return r + ".bool";
         else if(type.equals(":="))
             return r + ".i32";
+        else if(type.equals("String"))
+            return r + "." +type;
 
         return "." + type;
     }
@@ -528,6 +531,19 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     }
 
     private String visitNewObject (JmmNode jmmNode, String idType) {
+
+        for (Symbol locVar : table.getLocalVariables(currentMethod)){
+            if(locVar.getName().equals(jmmNode.getJmmParent().get("value"))){
+                var val = nextTemp();
+                var varType = jmmNode.get("value");
+                String p_code = "";
+                p_code += val + "."+varType + " :=." + varType + " new(" + jmmNode.get("value")+ ")."+ varType+ ";\n";
+                p_code += "\t\tinvokespecial(" + val+"."+varType +  ", \"\").V;\n";
+                ollirCode += p_code;
+                return val+"."+varType;
+            }
+        }
+
         return "new(" + jmmNode.get("value") + ")" + idType;
     }
 
@@ -538,7 +554,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     private String getAssigmentRetType(String op) {
         return switch (op) {
             case "+", "-", "*", "/" -> ".i32";
-            case "&&", "<", "==", "!=" -> ".bool";
+            case "&&", "<", "==", "!=" , "!" -> ".bool";
             default -> "." +op;
         };
     }

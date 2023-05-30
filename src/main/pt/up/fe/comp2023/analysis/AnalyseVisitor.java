@@ -169,7 +169,7 @@ public class AnalyseVisitor extends PostorderJmmVisitor<MySymbolTable, List<Repo
                 List<Symbol> methodParams = symbolTable.getParameters(methodName);
                 int methodParamsSize = 0;
                 if (methodParams != null) methodParamsSize = methodParams.size();
-                JmmNode argumentsNode = jmmNode.getJmmChild(1);
+                JmmNode argumentsNode = jmmNode.getJmmChild(0);
                 if (methodParamsSize != argumentsNode.getNumChildren()) {
                     reports.add(new Report(ReportType.ERROR, Stage.SEMANTIC, Integer.parseInt(jmmNode.get("lineStart")), "Method " + methodName + " has " + methodParams.size() + " parameters"));
                 } else {

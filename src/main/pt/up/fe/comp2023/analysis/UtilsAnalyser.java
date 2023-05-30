@@ -69,7 +69,8 @@ public class UtilsAnalyser {
             }
 
             case "MethodCall" -> {
-                String methodName = jmmNode.get("name");
+                String methodName = jmmNode.getAncestor("MethodDef").get().get("signature");
+                System.out.println("ola ola : "+jmmNode.getAncestor("MethodDef").get().getKind());
                 return (symbolTable.getReturnType(methodName));
             }
 
