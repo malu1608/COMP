@@ -39,7 +39,7 @@ public class Launcher {
         // Instantiate JmmParser
         SimpleParser parser = new SimpleParser();
 
-        code = SpecsIo.read("test/pt/up/fe/comp/cpf/2_semantic_analysis/lookup/VarLookup_Field.jmm");
+        code = SpecsIo.read("test/pt/up/fe/comp/cpf/3_ollir/arrays/ArrayInit.jmm");
 
         // Parse stage
         JmmParserResult parserResult = parser.parse(code, config);

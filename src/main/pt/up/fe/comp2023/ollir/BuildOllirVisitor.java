@@ -51,8 +51,10 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         addVisit("ArrayAccess", this::visitArray);
         addVisit("ArrayAssignStat", this::visitArrayAssign);
 
+
         setDefaultVisit(this::setDefault);
     }
+
 
     private String visitArrayAssign(JmmNode jmmNode, String s) {
         ollirCode += jmmNode.get("value") + "[" + visit(jmmNode.getJmmChild(0)) + "]" + ".i32 :="+ parseType("int") + " "+ visit(jmmNode.getJmmChild(1)) + ";\n";
@@ -164,6 +166,16 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             //val = value.substring(0, value.length() - 4) + varType;
         }
 
+        if(table.isLocalVariable(varName,currentMethod)){
+            String idType = "";
+            for(JmmNode jmmNode1 : jmmNode.getAncestor("MethodDef").get().getChildren()) {
+                if (jmmNode1.getKind().equals("VarDecl") && jmmNode1.get("name").equals(varName)) {
+                    idType = parseType(jmmNode1.getJmmChild(0).get("name"), Boolean.parseBoolean(jmmNode1.getJmmChild(0).get("isArray")));
+                }
+            }
+            return varName + idType ;
+
+        }
         return varName + getOllirType(varName);
     }
 
@@ -410,11 +422,16 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         boolean grandchildren = false;
         for (JmmNode grandchild : methodCall.getChildren()) {
             grandchildren = true;
-            if(grandchild.getKind().equals("Length") || grandchild.getKind().equals("ArrayAccess")){
+            if( grandchild.getKind().equals("ArrayAccess")){
                 code.append(" , " + visit(grandchild.getJmmChild(0)));
             }
-            else if(!grandchild.get("value").equals(identifier.get("value")))
+            else if(grandchild.getKind().equals("Length")){
+                var res = visit(grandchild);
+                code.append(" , " + res);
+            }
+            else if(!grandchild.get("value").equals(identifier.get("value")) ){
                 code.append( " , " + visit(grandchild));
+            }
 
 
         }
@@ -458,7 +475,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         String var_name = jmmNode.get("value"); //assignStat
         var idType = getOllirType(jmmNode.get("value"));
-        System.out.println("VAR: " + var_name + " " + idType);
+        //System.out.println("VAR: " + var_name + " " + idType);
 
 
         var child = visit(jmmNode.getJmmChild(0),idType);
@@ -472,8 +489,10 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         }
 
-        if(idType.equals("")){ //caso tenha temps!!!
-            idType += child.substring(child.indexOf("."));
+        for(JmmNode jmmNode1 : jmmNode.getJmmParent().getChildren()) {
+            if (jmmNode1.getKind().equals("VarDecl") && jmmNode1.get("name").equals(var_name)) {
+                idType = parseType(jmmNode1.getJmmChild(0).get("name"), Boolean.parseBoolean(jmmNode1.getJmmChild(0).get("isArray")));
+            }
         }
 
         //visit(jmmNode.getJmmChild(0),idType);
@@ -495,6 +514,8 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         return ollirCode;
 
     }
+
+
     private String setDefault(JmmNode jmmNode, String s) {
         StringBuilder visitStr = new StringBuilder();
         return visitStr.toString();
