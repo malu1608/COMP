@@ -25,7 +25,7 @@ public class Method {
     }
 
     public List<Symbol> getParameters() {
-        System.out.println("params " + parameters);
+
         return parameters;
     }
 

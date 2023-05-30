@@ -36,7 +36,6 @@ public class MySymbolTable implements SymbolTable {
     @Override
     public List<String> getMethods() {
         List<String> methodNames = new ArrayList<>();
-        System.out.println(methodNames);
         methodNames.addAll(methodsList.keySet());
 
         return methodNames;
@@ -76,7 +75,6 @@ public class MySymbolTable implements SymbolTable {
 
 
     public void addMethod(String s, Type returnType, List<Symbol> parameters, List<Symbol> variables) {
-        System.out.println("signature " + s);
         methodsList.put( s, new Method(returnType, parameters, variables));
     }
 

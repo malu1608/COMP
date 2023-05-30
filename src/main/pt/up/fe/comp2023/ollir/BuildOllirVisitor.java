@@ -58,13 +58,13 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
 
     private String visitArrayAssign(JmmNode jmmNode, String s) {
-        ollirCode += jmmNode.get("value") + "[" + visit(jmmNode.getJmmChild(0)) + "]" + ".i32 :="+ parseType("int") + " "+ visit(jmmNode.getJmmChild(1)) + ";\n";
+        ollirCode += jmmNode.get("value") + "[" + visit(jmmNode.getJmmChild(0), parseType("int",true)) + "]" + ".i32 :="+ parseType("int") + " "+ visit(jmmNode.getJmmChild(1)) + ";\n";
         return ollirCode;
     }
 
     private String visitArray(JmmNode jmmNode, String s) {
         String temp = nextTemp() + ".i32";
-        ollirCode += temp + " :=.i32 " + visit(jmmNode.getJmmChild(0)) + "[" + visit(jmmNode.getJmmChild(1)) + "].i32;\n";
+        ollirCode += temp + " :=.i32 " + visit(jmmNode.getJmmChild(0),parseType("int",true)) + "[" + visit(jmmNode.getJmmChild(1)) + "].i32;\n";
         return temp;
     }
 
@@ -151,7 +151,13 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
     }
 
     private String visitBoolean(JmmNode jmmNode, String methodName) {
-        return jmmNode.get("value") + parseType("boolean");
+        var var_name = jmmNode.get("value");
+        if (var_name.equals("true")){
+            var_name = "1";
+        }else{
+            var_name = "0";
+        }
+        return var_name + parseType("boolean");
     }
 
 
@@ -168,15 +174,11 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             //val = value.substring(0, value.length() - 4) + varType;
         }
 
-        /*
+
         if(table.isLocalVariable(varName,currentMethod)){
-            String idType2 = "";
-            for(JmmNode jmmNode1 : jmmNode.getAncestor("MethodDef").get().getChildren()) {
-                if (jmmNode1.getKind().equals("VarDecl") && jmmNode1.get("name").equals(varName)) {
-                    idType2 = parseType(jmmNode1.getJmmChild(0).get("name"), Boolean.parseBoolean(jmmNode1.getJmmChild(0).get("isArray")));
-                }
-            }
-            return varName + idType2 ;*/
+
+            return varName + getOllirType(varName);
+        }
 
 
         return varName + idType;
@@ -354,7 +356,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
 
         if (!parameters.isEmpty()) {
             for (Symbol parameter : parameters) {
-                System.out.println("caralhhooo " + parameter.getType().isArray());
+                //System.out.println("caralhhooo " + parameter.getType().isArray());
                 ollirCode += parameter.getName() + parseType(parameter.getType().getName(),parameter.getType().isArray()) + ", ";
 
             }
@@ -543,6 +545,8 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             return ".bool";
         else if(type.equals(":="))
             return ".i32";
+
+
 
         return "." + type;
     }
