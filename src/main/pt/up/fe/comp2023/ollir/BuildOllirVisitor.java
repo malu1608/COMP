@@ -388,10 +388,11 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         }
         JmmNode identifier = methodCall.getJmmChild(0);
         StringBuilder code = new StringBuilder();
+        /*
         if(methodCall.getChildren().size() > 1){
             JmmNode arguments = methodCall.getJmmChild(1);
             visit(arguments, methodName);
-        }
+        }*/
         String idType = getOllirType(identifier.get("value"));
         boolean istatic = false;
         String returnType = ".V";
@@ -463,7 +464,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         var child = visit(jmmNode.getJmmChild(0),idType);
 
 
-        if(table.isGlobal(var_name) && getOllirType(var_name).equals("") ){ //2 cond p caso de ter varlocal igual a um field
+        if(table.isGlobal(var_name) && !table.isLocalVariable(var_name,currentMethod) ){ //2 cond p caso de ter varlocal igual a um field
 
             ollirCode += "\t\tputfield(this, " + var_name + idType +  ", " + child +")" +  ".V;\n";
 
@@ -475,7 +476,7 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
             idType += child.substring(child.indexOf("."));
         }
 
-        visit(jmmNode.getJmmChild(0),idType);
+        //visit(jmmNode.getJmmChild(0),idType);
         var assign = "\t\t"+ var_name + idType + " :=" + idType + " " + child + ";\n";
 
         ollirCode += assign;

@@ -60,10 +60,7 @@ public class MySymbolTable implements SymbolTable {
 
     @Override
     public List<Symbol> getParameters(String s) {
-        //System.out.println("mname + " + s);
-        //for(String k : methodsList.keySet()) System.out.println(k);
-        //System.out.println(methodsList.keySet());
-        //System.out.println(s + methodsList.get(s));
+
         return methodsList.get(s).getParameters();
     }
 
@@ -114,10 +111,10 @@ public class MySymbolTable implements SymbolTable {
     }
 
 
-    public Symbol getVariable(String variableName, String methodName) {
-        Symbol globalVar = this.getField(variableName);
+    public Boolean isLocalVariable(String variableName, String methodName) {
         Symbol localVar = this.getMethod(methodName).getLocalVariable(variableName);
-        return localVar != null ? localVar : globalVar;
+        if (localVar == null) return false;
+        return true;
     }
 
     public boolean isGlobal(String variableName) {
@@ -201,4 +198,6 @@ public class MySymbolTable implements SymbolTable {
         }
         return false;
     }
+
+
 }
