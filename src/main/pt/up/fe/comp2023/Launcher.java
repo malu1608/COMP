@@ -39,7 +39,7 @@ public class Launcher {
         // Instantiate JmmParser
         SimpleParser parser = new SimpleParser();
 
-        code = SpecsIo.read("test/pt/up/fe/comp/cpf/4_jasmin/control_flow/IfWhileNested.jmm");
+        code = SpecsIo.read("test/pt/up/fe/comp/cpf/4_jasmin/arrays/ComplexArrayAccess.jmm");
 
         // Parse stage
         JmmParserResult parserResult = parser.parse(code, config);

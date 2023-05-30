@@ -11,10 +11,10 @@ import java.util.Objects;
 
 //TODO
 /*
-* method calls !!!
+*
 * lidar com arrays - ioPlus.printResult(a[d.func(0)]);
 * this!!
-* if , while esquisito?'
+*
 */
 
 public class BuildOllirVisitor extends AJmmVisitor<String,String> {
@@ -51,9 +51,18 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
         addVisit("Length", this::visitLength);
         addVisit("ArrayAccess", this::visitArray);
         addVisit("ArrayAssignStat", this::visitArrayAssign);
+        addVisit("NotExpression", this::visitNotExp);
 
 
         setDefaultVisit(this::setDefault);
+    }
+
+    private String visitNotExp(JmmNode jmmNode, String s) {
+        String op = "!";
+        var value = nextTemp() + getAssigmentRetType(op);
+
+        ollirCode += value  + " "+ ":=" + getAssigmentRetType(op) + " "+ op + getAssigmentRetType("!") + " "+ visit(jmmNode.getJmmChild(0), "boolean") + ";\n";
+        return value;
     }
 
 
@@ -452,7 +461,9 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
                     }
                 }
 
+
                 code.append(returnType).append(";\n");
+
                 ollirCode += code.toString();
                 return ollirCode;
             }
@@ -464,7 +475,11 @@ public class BuildOllirVisitor extends AJmmVisitor<String,String> {
                 }
         }    //code.append(".").append(returnType.split("\\.")[1]);
 
-        return code.toString();
+        StringBuilder aux = new StringBuilder();
+        var value = nextTemp() + parseType("int");
+        ollirCode +=  value +  " :=" + returnType+ " " + code.toString() + ";\n";
+        return value;
+
 
     }
 
